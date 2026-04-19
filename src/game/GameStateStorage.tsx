@@ -1,6 +1,6 @@
 import type { NightEvent, NightEvents } from "./NightEvents";
 import { ALL_ROLES, type Role } from "./Roles";
-import type { GamePhase, GameState, Player } from "./GameState";
+import type { GamePhase, GameState, GlobalState, Player } from "./GameState";
 
 const STORAGE_KEY = "in-plain-sight.game-state";
 
@@ -28,6 +28,27 @@ function parseNightEventValue(
   if (typeof raw === "string" || typeof raw === "boolean") return raw;
   if (typeof raw === "number" && Number.isFinite(raw)) return raw;
   return null;
+}
+
+function parseGlobalStateValue(
+  raw: unknown,
+): string | number | boolean | null {
+  if (typeof raw === "string" || typeof raw === "boolean") return raw;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  return null;
+}
+
+function parseGlobalState(raw: unknown): GlobalState {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  const o = raw as Record<string, unknown>;
+  const global: GlobalState = {};
+  for (const [k, v] of Object.entries(o)) {
+    const parsed = parseGlobalStateValue(v);
+    if (parsed !== null) global[k] = parsed;
+  }
+  return global;
 }
 
 function parseNightEvent(raw: unknown): NightEvent | null {
@@ -68,7 +89,10 @@ function parseGameState(data: unknown): GameState | null {
     nightEvents.push(ev);
   }
 
-  return { players, phase, nightEvents };
+  const global =
+    "global" in o ? parseGlobalState(o.global) : ({} as GlobalState);
+
+  return { players, global, phase, nightEvents };
 }
 
 /** Returns `null` if nothing valid is stored or `localStorage` is unavailable. */

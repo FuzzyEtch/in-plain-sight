@@ -1,4 +1,4 @@
-import type { GameState, Player } from "./GameState";
+import type { GameState, GlobalState, Player } from "./GameState";
 
 /** Reserved target for events that apply to global game state (not a specific player). */
 export const GLOBAL_GAME_STATE_TARGET = "global-game-state" as const;
@@ -36,6 +36,55 @@ function pickRandom<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)]!;
 }
 
+/**
+ * Assumes `events` is already sorted ascending by {@link NightEvent.priority}.
+ * For each group of equal priority, keeps one event (chosen with
+ * {@link pickRandom}) and discards the rest.
+ *
+ * Returns a new array, still sorted ascending by priority.
+ */
+export function dedupNightEvents(events: NightEvents): NightEvents {
+  if (events.length === 0) return [];
+  const out: NightEvent[] = [];
+  let runStart = 0;
+  for (let i = 1; i <= events.length; i++) {
+    const atEnd = i === events.length;
+    const priorityChanged =
+      !atEnd && events[i]!.priority !== events[runStart]!.priority;
+    if (atEnd || priorityChanged) {
+      const run = events.slice(runStart, i);
+      out.push(pickRandom(run));
+      runStart = i;
+    }
+  }
+  return out;
+}
+
+function nightEventSlotKey(event: NightEvent): string {
+  return `${event.target}\u0001${event.key}`;
+}
+
+/**
+ * One pass over `events`: for each distinct `(target, key)` slot, keeps a single
+ * event — the one with the **highest** `priority`. If several share that max
+ * priority, the **last** occurrence in input order wins.
+ *
+ * Returns a new list sorted ascending by `priority` (same order as
+ * {@link sortNightEvents}), suitable to apply in sequence without redundant
+ * writes to the same slot.
+ */
+export function flattenNightEvents(events: NightEvents): NightEvents {
+  const winners = new Map<string, NightEvent>();
+  for (const e of events) {
+    const slot = nightEventSlotKey(e);
+    const prev = winners.get(slot);
+    if (prev == null || e.priority >= prev.priority) {
+      winners.set(slot, e);
+    }
+  }
+  return sortNightEvents([...winners.values()]);
+}
+
 function applyNightEventToPlayer(player: Player, event: NightEvent): Player {
   const { key, value } = event;
   if (key === "alive") {
@@ -44,13 +93,17 @@ function applyNightEventToPlayer(player: Player, event: NightEvent): Player {
   return player;
 }
 
+function applyNightEventToGlobal(
+  global: GlobalState,
+  event: NightEvent,
+): GlobalState {
+  return { ...global, [event.key]: event.value };
+}
+
 function applyNightEventToPlayers(
   players: Player[],
   event: NightEvent,
 ): Player[] {
-  if (isGlobalGameStateTarget(event.target)) {
-    return players;
-  }
   const i = players.findIndex((p) => p.id === event.target);
   if (i === -1) return players;
   const next = players.slice();
@@ -59,11 +112,11 @@ function applyNightEventToPlayers(
 }
 
 /**
- * Applies queued night events to {@link GameState} in ascending priority order.
- * For each distinct priority, exactly one event is chosen uniformly at random;
- * the rest at that priority are discarded. Player targets get `key` updated to
- * `value` (e.g. `alive`). Global targets are skipped until global state exists.
- * Clears `nightEvents` when done.
+ * Resolves queued night events: sorts, {@link dedupNightEvents} (one random
+ * survivor per priority), {@link flattenNightEvents} (one event per
+ * `(target, key)` keeping highest priority), then applies the result in ascending
+ * priority order. Player targets get `key` → `value` (e.g. `alive`). Global
+ * targets merge into {@link GameState.global}. Clears `nightEvents` when done.
  */
 export function resolveNightEvents(state: GameState): GameState {
   const sorted = sortNightEvents(state.nightEvents);
@@ -71,22 +124,19 @@ export function resolveNightEvents(state: GameState): GameState {
     return { ...state, nightEvents: [] };
   }
 
-  const byPriority = new Map<number, NightEvent[]>();
-  for (const e of sorted) {
-    const list = byPriority.get(e.priority) ?? [];
-    list.push(e);
-    byPriority.set(e.priority, list);
-  }
+  const deduped = dedupNightEvents(sorted);
+  const flattened = flattenNightEvents(deduped);
 
-  const priorities = [...byPriority.keys()].sort((a, b) => a - b);
   let players = state.players.map((p) => ({ ...p }));
+  let global: GlobalState = { ...(state.global ?? {}) };
 
-  for (const pr of priorities) {
-    const group = byPriority.get(pr);
-    if (group == null || group.length === 0) continue;
-    const winner = pickRandom(group);
-    players = applyNightEventToPlayers(players, winner);
+  for (const event of flattened) {
+    if (isGlobalGameStateTarget(event.target)) {
+      global = applyNightEventToGlobal(global, event);
+    } else {
+      players = applyNightEventToPlayers(players, event);
+    }
   }
 
-  return { ...state, players, nightEvents: [] };
+  return { ...state, players, global, nightEvents: [] };
 }

@@ -9,10 +9,14 @@ export type Player = {
   alive: boolean;
 };
 
+/** Arbitrary keyed values updated by global-target night events (see {@link resolveNightEvents}). */
+export type GlobalState = Record<string, string | number | boolean>;
+
 export type GamePhase = "night" | "day";
 
 export type GameState = {
   players: Player[];
+  global: GlobalState;
   phase: GamePhase;
   nightEvents: NightEvents;
 };
@@ -76,6 +80,6 @@ export function initializeGameState(
 
   return {
     ok: true,
-    gameState: { players, phase: "night", nightEvents: [] },
+    gameState: { players, global: {}, phase: "night", nightEvents: [] },
   };
 }
