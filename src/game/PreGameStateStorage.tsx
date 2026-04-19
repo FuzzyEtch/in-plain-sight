@@ -51,3 +51,12 @@ export function savePreGameState(state: PreGameState): void {
     // Quota, private mode, or disabled storage
   }
 }
+
+export function clearPreGameStateStorage(): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
