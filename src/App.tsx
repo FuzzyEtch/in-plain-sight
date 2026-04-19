@@ -89,6 +89,7 @@ function App() {
       <DayMenu
         onContinue={handleDayContinue}
         nightEventMessages={gameState.nightEventMessages}
+        players={gameState.players}
       />
     );
   } else {
