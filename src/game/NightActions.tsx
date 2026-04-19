@@ -54,11 +54,13 @@ function NightActionKiller({
 
   function handleConfirm() {
     if (selectedVictimId == null || submitted) return;
+    const victimName = gameState.players.find((p) => p.id === selectedVictimId)?.name;
     onAppendNightEvent({
       priority: KILLER_KILL_PRIORITY,
       target: selectedVictimId,
       key: "alive",
       value: false,
+      message: `Player ${victimName} was found dead this moring. ${victimName} cannot speak or vote for the rest of the game.`,
     });
     setSubmitted(true);
   }

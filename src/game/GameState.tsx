@@ -19,6 +19,7 @@ export type GameState = {
   global: GlobalState;
   phase: GamePhase;
   nightEvents: NightEvents;
+  nightEventMessages: string[];
 };
 
 export function setGamePhase(state: GameState, phase: GamePhase): GameState {
@@ -80,6 +81,12 @@ export function initializeGameState(
 
   return {
     ok: true,
-    gameState: { players, global: {}, phase: "night", nightEvents: [] },
+    gameState: {
+      players,
+      global: {},
+      phase: "night",
+      nightEvents: [],
+      nightEventMessages: [],
+    },
   };
 }

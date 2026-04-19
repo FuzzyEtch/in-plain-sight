@@ -59,12 +59,25 @@ function parseNightEvent(raw: unknown): NightEvent | null {
   if (typeof o.key !== "string") return null;
   const value = parseNightEventValue(o.value);
   if (value === null) return null;
-  return {
+  const event: NightEvent = {
     priority: o.priority,
     target: o.target,
     key: o.key,
     value,
   };
+  if (typeof o.message === "string") {
+    event.message = o.message;
+  }
+  return event;
+}
+
+function parseNightEventMessages(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item === "string") out.push(item);
+  }
+  return out;
 }
 
 function parseGameState(data: unknown): GameState | null {
@@ -92,7 +105,12 @@ function parseGameState(data: unknown): GameState | null {
   const global =
     "global" in o ? parseGlobalState(o.global) : ({} as GlobalState);
 
-  return { players, global, phase, nightEvents };
+  const nightEventMessages =
+    "nightEventMessages" in o
+      ? parseNightEventMessages(o.nightEventMessages)
+      : [];
+
+  return { players, global, phase, nightEvents, nightEventMessages };
 }
 
 /** Returns `null` if nothing valid is stored or `localStorage` is unavailable. */

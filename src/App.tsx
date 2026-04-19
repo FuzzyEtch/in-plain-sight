@@ -85,7 +85,12 @@ function App() {
       />
     );
   } else if (gameState != null && gameState.phase === "day") {
-    main = <DayMenu onContinue={handleDayContinue} />;
+    main = (
+      <DayMenu
+        onContinue={handleDayContinue}
+        nightEventMessages={gameState.nightEventMessages}
+      />
+    );
   } else {
     main = (
       <MainMenu key={mainMenuKey} onGameInitialized={handleGameInitialized} />

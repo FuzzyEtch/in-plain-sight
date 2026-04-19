@@ -121,7 +121,7 @@ function applyNightEventToPlayers(
 export function resolveNightEvents(state: GameState): GameState {
   const sorted = sortNightEvents(state.nightEvents);
   if (sorted.length === 0) {
-    return { ...state, nightEvents: [] };
+    return { ...state, nightEvents: [], nightEventMessages: [] };
   }
 
   const deduped = dedupNightEvents(sorted);
@@ -129,6 +129,7 @@ export function resolveNightEvents(state: GameState): GameState {
 
   let players = state.players.map((p) => ({ ...p }));
   let global: GlobalState = { ...(state.global ?? {}) };
+  let nightEventMessages: string[] = [];
 
   for (const event of flattened) {
     if (isGlobalGameStateTarget(event.target)) {
@@ -136,7 +137,10 @@ export function resolveNightEvents(state: GameState): GameState {
     } else {
       players = applyNightEventToPlayers(players, event);
     }
+    if (event.message != null) {
+      nightEventMessages.push(event.message);
+    }
   }
 
-  return { ...state, players, global, nightEvents: [] };
+  return { ...state, players, global, nightEvents: [], nightEventMessages };
 }
