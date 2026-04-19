@@ -1,3 +1,4 @@
+import type { NightEvents } from "./NightEvents";
 import { ALL_ROLES, type Role } from "./Roles";
 import type { PreGameState } from "./PreGameState";
 
@@ -5,6 +6,7 @@ export type Player = {
   id: string;
   name: string;
   role: Role;
+  alive: boolean;
 };
 
 export type GamePhase = "night" | "day";
@@ -12,6 +14,7 @@ export type GamePhase = "night" | "day";
 export type GameState = {
   players: Player[];
   phase: GamePhase;
+  nightEvents: NightEvents;
 };
 
 export function setGamePhase(state: GameState, phase: GamePhase): GameState {
@@ -68,10 +71,11 @@ export function initializeGameState(
     id: p.id,
     name: p.name,
     role: pool[i]!,
+    alive: true,
   }));
 
   return {
     ok: true,
-    gameState: { players, phase: "night" },
+    gameState: { players, phase: "night", nightEvents: [] },
   };
 }

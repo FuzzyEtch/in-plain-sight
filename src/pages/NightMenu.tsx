@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getNightActionComponent } from "../game/NightActions";
+import type { NightEvent } from "../game/NightEvents";
 import type { GameState } from "../game/GameState";
 import type { RoleType } from "../game/Roles";
 import "./NightMenu.css";
@@ -7,6 +8,7 @@ import "./NightMenu.css";
 export type NightMenuProps = {
   gameState: GameState;
   onComplete: () => void;
+  onAppendNightEvent: (event: NightEvent) => void;
 };
 
 type NightStep = "identity1" | "identity2" | "rolePanel";
@@ -22,7 +24,11 @@ function teamLabel(type: RoleType): string {
   }
 }
 
-export function NightMenu({ gameState, onComplete }: NightMenuProps) {
+export function NightMenu({
+  gameState,
+  onComplete,
+  onAppendNightEvent,
+}: NightMenuProps) {
   const { players } = gameState;
   const [playerIndex, setPlayerIndex] = useState(0);
   const [step, setStep] = useState<NightStep>("identity1");
@@ -97,15 +103,13 @@ export function NightMenu({ gameState, onComplete }: NightMenuProps) {
           <div className="night-menu-action-block">
             <h3 className="night-menu-subheading">Tonight</h3>
             <div className="night-menu-night-action">
-              <NightActionComponent />
+              <NightActionComponent
+                gameState={gameState}
+                actingPlayerId={player.id}
+                onAppendNightEvent={onAppendNightEvent}
+                onContinueNightTurn={handleRolePanelContinue}
+              />
             </div>
-            <button
-              type="button"
-              className="night-menu-btn night-menu-btn-primary"
-              onClick={handleRolePanelContinue}
-            >
-              Continue
-            </button>
           </div>
         </div>
       ) : (

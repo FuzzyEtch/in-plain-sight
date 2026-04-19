@@ -1,15 +1,136 @@
+import { useId, useMemo, useState } from "react";
 import type { ReactElement } from "react";
+import type { NightEvent } from "./NightEvents";
+import type { GameState } from "./GameState";
 import type { Role } from "./Roles";
+import "./NightActions.css";
 
-/** Renders the night-action UI for a role (no props; parent supplies layout). */
-export type NightActionComponent = () => ReactElement;
+export type NightActionProps = {
+  gameState: GameState;
+  actingPlayerId: string;
+  onAppendNightEvent: (event: NightEvent) => void;
+  /** Advance to the next player (or end the night round). */
+  onContinueNightTurn: () => void;
+};
 
-function NightActionDefault(): ReactElement {
-  return <>To be implemented.</>;
+/** Renders the night-action UI for a role. */
+export type NightActionComponent = (props: NightActionProps) => ReactElement;
+
+function NightActionDefault({
+  onContinueNightTurn,
+}: NightActionProps): ReactElement {
+  return (
+    <div className="night-action-default">
+      <p className="night-action-default-placeholder">To be implemented.</p>
+      <button
+        type="button"
+        className="night-menu-btn night-menu-btn-primary"
+        onClick={onContinueNightTurn}
+      >
+        Continue
+      </button>
+    </div>
+  );
 }
 
-function NightActionKiller(): ReactElement {
-  return <>actively being worked on</>;
+const KILLER_KILL_PRIORITY = 100;
+
+function NightActionKiller({
+  gameState,
+  onAppendNightEvent,
+  onContinueNightTurn,
+}: NightActionProps): ReactElement {
+  const groupId = useId();
+  const [selectedVictimId, setSelectedVictimId] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const eligibleVictims = useMemo(
+    () =>
+      gameState.players.filter(
+        (p) => p.alive && p.role.type !== "evil",
+      ),
+    [gameState.players],
+  );
+
+  function handleConfirm() {
+    if (selectedVictimId == null || submitted) return;
+    onAppendNightEvent({
+      priority: KILLER_KILL_PRIORITY,
+      target: selectedVictimId,
+      key: "alive",
+      value: false,
+    });
+    setSubmitted(true);
+  }
+
+  if (eligibleVictims.length === 0) {
+    return (
+      <div className="night-action-killer">
+        <p className="night-action-killer-empty">
+          No eligible players to target tonight.
+        </p>
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="night-action-killer">
+      {!submitted ? (
+        <fieldset className="night-action-killer-fieldset">
+          <legend className="night-action-killer-legend">Choose a victim</legend>
+          <ul className="night-action-killer-list">
+            {eligibleVictims.map((p) => (
+              <li key={p.id}>
+                <label className="night-action-killer-label">
+                  <input
+                    type="radio"
+                    className="night-action-killer-radio"
+                    name={groupId}
+                    value={p.id}
+                    checked={selectedVictimId === p.id}
+                    onChange={() => setSelectedVictimId(p.id)}
+                  />
+                  <span className="night-action-killer-name">{p.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      ) : null}
+      {!submitted ? (
+        <button
+          type="button"
+          className="night-action-killer-confirm"
+          disabled={selectedVictimId == null}
+          onClick={handleConfirm}
+        >
+          Confirm kill
+        </button>
+      ) : null}
+      {submitted ? (
+        <p className="night-action-killer-done" role="status">
+          Player eliminated.
+        </p>
+      ) : null}
+      {selectedVictimId != null ? (
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary night-action-killer-continue"
+          disabled={!submitted}
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 /**
