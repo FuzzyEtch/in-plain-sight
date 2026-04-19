@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getNightActionComponent } from "../game/NightActions";
 import type { NightEvent } from "../game/NightEvents";
-import type { GameState } from "../game/GameState";
+import type { GameState, Player } from "../game/GameState";
 import type { RoleType } from "../game/Roles";
 import "./NightMenu.css";
 
@@ -12,6 +12,11 @@ export type NightMenuProps = {
 };
 
 type NightStep = "identity1" | "identity2" | "rolePanel";
+
+/** Players matching this are skipped for the night round (extend as rules grow). */
+function shouldSkipNightTurn(player: Player): boolean {
+  return player.alive === false;
+}
 
 function teamLabel(type: RoleType): string {
   switch (type) {
@@ -30,25 +35,26 @@ export function NightMenu({
   onAppendNightEvent,
 }: NightMenuProps) {
   const { players } = gameState;
+  const nightTurnPlayers = players.filter((p) => !shouldSkipNightTurn(p));
   const [playerIndex, setPlayerIndex] = useState(0);
   const [step, setStep] = useState<NightStep>("identity1");
 
   useEffect(() => {
-    if (players.length === 0) {
+    if (nightTurnPlayers.length === 0) {
       onComplete();
     }
-  }, [players.length, onComplete]);
+  }, [nightTurnPlayers.length, onComplete]);
 
-  if (players.length === 0) {
+  if (nightTurnPlayers.length === 0) {
     return null;
   }
 
-  const player = players[playerIndex];
+  const player = nightTurnPlayers[playerIndex];
   if (player == null) {
     return null;
   }
 
-  const isLastPlayer = playerIndex >= players.length - 1;
+  const isLastPlayer = playerIndex >= nightTurnPlayers.length - 1;
 
   function handleFirstConfirm() {
     setStep("identity2");
@@ -78,7 +84,7 @@ export function NightMenu({
         Night
       </h1>
       <p className="night-menu-progress">
-        Player {playerIndex + 1} of {players.length}
+        Player {playerIndex + 1} of {nightTurnPlayers.length}
       </p>
 
       {step === "rolePanel" ? (
