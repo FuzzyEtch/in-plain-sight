@@ -14,38 +14,44 @@ export const ALL_ROLES: Role[] = [
         id: "killer",
         name: "Killer",
         type: "evil",
-        description: "Once per night, the serial killer can kill a player.",
+        description: "Once per night, the killer can kill a non-killer player. If there is more than one killer, each killer will be aware of the other killer's identity. If killers attempt to kill multiple players in the same night, a random victim will be selected.",
     },
     {
-        id: "corrupter",
-        name: "Corrupter",
+        id: "corruptor",
+        name: "Corruptor",
         type: "evil",
-        description: "On the first night, turn a player into a killer. The killer does not know you are the corrupter.",
+        description: "Once per game at night, turn a player into a killer, they do not retain any elements from their previous role. The killer does not know you are the corruptor.",
     },
     {
-        id: "stalker",
-        name: "Stalker",
+        id: "skin-walker",
+        name: "Skin Walker",
         type: "evil",
-        description: "",
+        description: "Once per night, the skin walker can kill a player. If another player interacts with the skin walker that night, the skin walker will swap roles with that player.",
     },
     // Good roles
     {
         id: "citizen",
         name: "Citizen",
         type: "good",
-        description: "To Implement",
+        description: "A Citizen do not have any special abilities or night actions.",
     },
     {
         id: "coroner",
         name: "Coroner",
         type: "good",
-        description: "To Implement",
+        description: "Once per night, the coroner can reveal a dead player's role.",
+    },
+    {
+        id: "defender",
+        name: "Defender",
+        type: "good",
+        description: "Once per night, the defender can protect a player from being killed.",
     },
     {
         id: "bitter-bloom",
         name: "Bitter Bloom",
         type: "good",
-        description: "Once per game, the bitter bloom can bring back a dead player as a zombie. The zombie can vote, but cannot speak and has no powers at night.",
+        description: "Once per game, the bitter bloom can bring back a dead player as a lobotomite. A lobotomite can vote, but cannot speak and has no powers at night.",
     },
     {
         id: "powder-keg",
@@ -59,6 +65,12 @@ export const ALL_ROLES: Role[] = [
         type: "good",
         description: "Once per game, the witch docter can turn ANY player into a citizen.",
     },
+    {
+        id: "lobotomite",
+        name: "Lobotomite",
+        type: "good",
+        description: "A lobotomite can vote, but cannot speak and has no powers at night.",
+    },
     // Other roles
     {
         id: "martyr",
@@ -66,10 +78,4 @@ export const ALL_ROLES: Role[] = [
         type: "other",
         description: "At the end of the game, the martyr wins if they were killed at night.",
     },
-    {
-        id: "zombie",
-        name: "Zombie",
-        type: "other",
-        description: "To Implement",
-    }
 ];
