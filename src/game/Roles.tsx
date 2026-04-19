@@ -36,16 +36,22 @@ export const ALL_ROLES: Role[] = [
         description: "A Citizen do not have any special abilities or night actions.",
     },
     {
+        id: "detective",
+        name: "Detective",
+        type: "good",
+        description: "Once per night, the detective can reveal which team a player is on.",
+    },
+    {
         id: "coroner",
         name: "Coroner",
         type: "good",
         description: "Once per night, the coroner can reveal a dead player's role.",
     },
     {
-        id: "defender",
-        name: "Defender",
+        id: "protector",
+        name: "Protector",
         type: "good",
-        description: "Once per night, the defender can protect a player from being killed.",
+        description: "Once per night, the protector can protect a player from being killed.",
     },
     {
         id: "bitter-bloom",
@@ -79,3 +85,12 @@ export const ALL_ROLES: Role[] = [
         description: "At the end of the game, the martyr wins if they were killed at night.",
     },
 ];
+
+export const ALL_ROLES_LOOKUP = ALL_ROLES.reduce((acc, role) => {
+  acc[role.id] = role;
+  return acc;
+}, {} as Record<string, Role>);
+
+export function getRoleById(roleId: string): Role | undefined {
+  return ALL_ROLES_LOOKUP[roleId];
+}

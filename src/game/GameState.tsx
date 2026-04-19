@@ -5,7 +5,8 @@ import type { PreGameState } from "./PreGameState";
 export type Player = {
   id: string;
   name: string;
-  role: Role;
+  /** Id of the role in {@link ALL_ROLES}. */
+  roleId: string;
   alive: boolean;
 };
 
@@ -75,7 +76,7 @@ export function initializeGameState(
   const players: Player[] = preGameState.players.map((p, i) => ({
     id: p.id,
     name: p.name,
-    role: pool[i]!,
+    roleId: pool[i]!.id,
     alive: true,
   }));
 

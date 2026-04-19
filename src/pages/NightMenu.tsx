@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getNightActionComponent } from "../game/NightActions";
 import type { NightEvent } from "../game/NightEvents";
 import type { GameState, Player } from "../game/GameState";
-import type { RoleType } from "../game/Roles";
+import { getRoleById, type RoleType } from "../game/Roles";
 import "./NightMenu.css";
 
 export type NightMenuProps = {
@@ -73,10 +73,12 @@ export function NightMenu({
     setStep("identity1");
   }
 
-  const role = player.role;
+  const role = getRoleById(player.roleId);
   const roleDescription =
-    role.description.trim() !== "" ? role.description : "No description yet.";
-  const NightActionComponent = getNightActionComponent(role.id);
+    role != null && role.description.trim() !== ""
+      ? role.description
+      : "No description yet.";
+  const NightActionComponent = getNightActionComponent(player.roleId);
 
   return (
     <section className="night-menu" aria-labelledby="night-menu-title">
@@ -91,12 +93,16 @@ export function NightMenu({
         <div className="night-menu-card night-menu-card--role-panel">
           <h2 className="night-menu-panel-name">{player.name}</h2>
           <p className="night-menu-role-team">
-            <span className="night-menu-role-title">{role.name}</span>
+            <span className="night-menu-role-title">
+              {role?.name ?? player.roleId}
+            </span>
             <span className="night-menu-role-sep" aria-hidden="true">
               {" "}
               ·{" "}
             </span>
-            <span className="night-menu-team">{teamLabel(role.type)}</span>
+            <span className="night-menu-team">
+              {role != null ? teamLabel(role.type) : "—"}
+            </span>
           </p>
           <div className="night-menu-role-desc-block">
             {/* <h3 className="night-menu-subheading">Description</h3> */}

@@ -17,9 +17,18 @@ function parsePlayer(raw: unknown): Player | null {
   const row = raw as Record<string, unknown>;
   if (typeof row.id !== "string" || typeof row.name !== "string") return null;
   if (typeof row.alive !== "boolean") return null;
-  const role = parseRole(row.role);
-  if (!role) return null;
-  return { id: row.id, name: row.name, role, alive: row.alive };
+
+  let roleId: string | null = null;
+  if (typeof row.roleId === "string" && row.roleId.length > 0) {
+    const catalog = ALL_ROLES.find((r) => r.id === row.roleId);
+    if (catalog) roleId = catalog.id;
+  }
+  if (roleId == null) {
+    const legacy = parseRole(row.role);
+    if (legacy) roleId = legacy.id;
+  }
+  if (roleId == null) return null;
+  return { id: row.id, name: row.name, roleId, alive: row.alive };
 }
 
 function parseNightEventValue(

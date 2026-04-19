@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import type { NightEvent } from "./NightEvents";
 import type { GameState } from "./GameState";
-import type { Role } from "./Roles";
+import { type Role } from "./Roles";
 import "./NightActions.css";
 
 export type NightActionProps = {
@@ -47,7 +47,7 @@ function NightActionKiller({
   const eligibleVictims = useMemo(
     () =>
       gameState.players.filter(
-        (p) => p.alive && p.role.type !== "evil",
+        (p) => p.alive && p.roleId !== "killer",
       ),
     [gameState.players],
   );
@@ -117,15 +117,9 @@ function NightActionKiller({
         </button>
       ) : null}
       {submitted ? (
-        <p className="night-action-killer-done" role="status">
-          Player eliminated.
-        </p>
-      ) : null}
-      {selectedVictimId != null ? (
         <button
           type="button"
           className="night-menu-btn night-menu-btn-primary night-action-killer-continue"
-          disabled={!submitted}
           onClick={onContinueNightTurn}
         >
           Continue
