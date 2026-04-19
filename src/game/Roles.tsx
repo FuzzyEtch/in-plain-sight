@@ -27,7 +27,7 @@ export const ALL_ROLES: Role[] = [
         name: "Stalker",
         type: "evil",
         description: "",
-    }
+    },
     // Good roles
     {
         id: "citizen",
