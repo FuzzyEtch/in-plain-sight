@@ -7,9 +7,16 @@ export type Player = {
   role: Role;
 };
 
+export type GamePhase = "night" | "day";
+
 export type GameState = {
   players: Player[];
+  phase: GamePhase;
 };
+
+export function setGamePhase(state: GameState, phase: GamePhase): GameState {
+  return { ...state, phase };
+}
 
 export type InitializeGameStateResult =
   | { ok: true; gameState: GameState }
@@ -63,5 +70,8 @@ export function initializeGameState(
     role: pool[i]!,
   }));
 
-  return { ok: true, gameState: { players } };
+  return {
+    ok: true,
+    gameState: { players, phase: "night" },
+  };
 }

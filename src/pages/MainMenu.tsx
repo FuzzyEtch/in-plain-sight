@@ -13,6 +13,10 @@ import { initializeGameState, type GameState } from "../game/GameState";
 import { ALL_ROLES, type RoleType } from "../game/Roles";
 import "./MainMenu.css";
 
+export type MainMenuProps = {
+  onGameInitialized: (gameState: GameState) => void;
+};
+
 const ROLE_TYPE_ORDER: RoleType[] = ["evil", "good", "other"];
 
 const ROLE_TYPE_LABELS: Record<RoleType, string> = {
@@ -21,7 +25,7 @@ const ROLE_TYPE_LABELS: Record<RoleType, string> = {
   other: "Other",
 };
 
-export function MainMenu() {
+export function MainMenu({ onGameInitialized }: MainMenuProps) {
   const [preGameState, setPreGameState] = useState(() => {
     return loadPreGameState() ?? createInitialPreGameState();
   });
@@ -32,7 +36,6 @@ export function MainMenu() {
 
   const [nameInput, setNameInput] = useState("");
   const [openRoleId, setOpenRoleId] = useState<string | null>(null);
-  const [gameState, setGameState] = useState<GameState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,7 +95,7 @@ export function MainMenu() {
       return;
     }
     setToast(null);
-    setGameState(result.gameState);
+    onGameInitialized(result.gameState);
   }
 
   const openRole =
@@ -110,11 +113,6 @@ export function MainMenu() {
           >
             Start game
           </button>
-          {gameState != null ? (
-            <p className="game-init-ok" role="status">
-              Roles assigned to {gameState.players.length} players.
-            </p>
-          ) : null}
         </div>
         <p className="subtitle">Add players before starting a game.</p>
 
