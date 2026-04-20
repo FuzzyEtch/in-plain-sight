@@ -60,6 +60,20 @@ function App() {
     setGameState((s) => (s == null ? s : setGamePhase(s, "night")));
   }, []);
 
+  const handleApplyDayElimination = useCallback((playerId: string | null) => {
+    setGameState((s) => {
+      if (s == null || playerId == null) return s;
+      const target = s.players.find((p) => p.id === playerId);
+      if (target == null || !target.alive) return s;
+      return {
+        ...s,
+        players: s.players.map((p) =>
+          p.id === playerId ? { ...p, alive: false } : p,
+        ),
+      };
+    });
+  }, []);
+
   const handleAppendNightEvent = useCallback((event: NightEvent) => {
     setGameState((s) => {
       if (s == null) return s;
@@ -90,6 +104,7 @@ function App() {
         onContinue={handleDayContinue}
         nightEventMessages={gameState.nightEventMessages}
         players={gameState.players}
+        onApplyElimination={handleApplyDayElimination}
       />
     );
   } else {

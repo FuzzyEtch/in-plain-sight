@@ -2,7 +2,9 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type FocusEvent,
 } from "react";
@@ -15,11 +17,38 @@ const EXTEND_SECONDS = 60;
 /** Per-target vote counts for the current day. */
 export type DayVoteTally = Record<string, number>;
 
+/**
+ * Returns the player id with strictly the most votes, or `null` if there is a tie
+ * or no votes.
+ */
+export function getEliminationTargetFromVoteTally(
+  tally: DayVoteTally,
+): string | null {
+  const entries = Object.entries(tally);
+  if (entries.length === 0) return null;
+
+  let max = -1;
+  const leaders: string[] = [];
+  for (const [id, count] of entries) {
+    if (count > max) {
+      max = count;
+      leaders.length = 0;
+      leaders.push(id);
+    } else if (count === max) {
+      leaders.push(id);
+    }
+  }
+  if (leaders.length !== 1) return null;
+  return leaders[0]!;
+}
+
 export type DayMenuProps = {
   onContinue: () => void;
   /** Messages collected from resolved night events for the night that just ended. */
   nightEventMessages: string[];
   players: Player[];
+  /** Apply day vote elimination once when resolution runs (`null` = no kill). */
+  onApplyElimination: (playerId: string | null) => void;
 };
 
 type DayMenuNightSummaryProps = {
@@ -307,40 +336,16 @@ function DayMenuVoting({
 }
 
 type DayMenuVotingConclusionProps = {
-  voteTally: DayVoteTally;
+  /** Who was eliminated by the vote, or that no one was (tie / no votes). */
+  conclusionText: string;
 };
 
-/** Host-facing summary: player id and total votes received (sorted by id). */
-function DayMenuVotingConclusion({ voteTally }: DayMenuVotingConclusionProps) {
-  const rows = useMemo(
-    () =>
-      Object.entries(voteTally).sort(([idA], [idB]) => idA.localeCompare(idB)),
-    [voteTally],
-  );
-
+function DayMenuVotingConclusion({ conclusionText }: DayMenuVotingConclusionProps) {
   return (
-    <div
-      className="day-menu-voting-conclusion"
-      aria-labelledby="day-menu-voting-conclusion-heading"
-    >
-      <h3
-        id="day-menu-voting-conclusion-heading"
-        className="day-menu-voting-conclusion-title"
-      >
-        Vote tally
-      </h3>
-      {rows.length === 0 ? (
-        <p className="day-menu-voting-conclusion-empty">No votes recorded.</p>
-      ) : (
-        <ul className="day-menu-voting-conclusion-list">
-          {rows.map(([playerId, count]) => (
-            <li key={playerId} className="day-menu-voting-conclusion-row">
-              <code className="day-menu-voting-conclusion-id">{playerId}</code>
-              <span className="day-menu-voting-conclusion-count">{count}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="day-menu-voting-conclusion">
+      <p className="day-menu-voting-conclusion-text" role="status">
+        {conclusionText}
+      </p>
     </div>
   );
 }
@@ -348,9 +353,49 @@ function DayMenuVotingConclusion({ voteTally }: DayMenuVotingConclusionProps) {
 type DayMenuResolutionProps = {
   onContinue: () => void;
   voteTally: DayVoteTally;
+  players: Player[];
+  onApplyElimination: (playerId: string | null) => void;
 };
 
-function DayMenuResolution({ onContinue, voteTally }: DayMenuResolutionProps) {
+function DayMenuResolution({
+  onContinue,
+  voteTally,
+  players,
+  onApplyElimination,
+}: DayMenuResolutionProps) {
+  const resolutionStartedRef = useRef(false);
+
+  const pendingEliminationId = useMemo(
+    () => getEliminationTargetFromVoteTally(voteTally),
+    [voteTally],
+  );
+
+  useLayoutEffect(() => {
+    if (resolutionStartedRef.current) return;
+    resolutionStartedRef.current = true;
+
+    let effectiveEliminationId: string | null = pendingEliminationId;
+
+    // -------------------------------------------------------------------------
+    // Day-phase role powers (not implemented): e.g. protection, redirect, or
+    // judge abilities. Use `pendingEliminationId` (nil when vote tie / no votes)
+    // and game state to decide whether to clear `effectiveEliminationId` before
+    // applying death below.
+    // -------------------------------------------------------------------------
+
+    onApplyElimination(effectiveEliminationId);
+  }, [pendingEliminationId, onApplyElimination]);
+
+  const outcomeLine = useMemo(() => {
+    if (pendingEliminationId == null) {
+      return "No one is eliminated (tie or no votes).";
+    }
+    const name =
+      players.find((p) => p.id === pendingEliminationId)?.name ??
+      pendingEliminationId;
+    return `${name} is eliminated.`;
+  }, [pendingEliminationId, players]);
+
   return (
     <div
       className="day-menu-resolution"
@@ -362,8 +407,7 @@ function DayMenuResolution({ onContinue, voteTally }: DayMenuResolutionProps) {
       >
         Day resolution
       </h2>
-      <p className="day-menu-placeholder-text">To be implemented.</p>
-      <DayMenuVotingConclusion voteTally={voteTally} />
+      <DayMenuVotingConclusion conclusionText={outcomeLine} />
       <button type="button" className="day-menu-continue" onClick={onContinue}>
         Continue to night
       </button>
@@ -377,6 +421,7 @@ export function DayMenu({
   onContinue,
   nightEventMessages,
   players,
+  onApplyElimination,
 }: DayMenuProps) {
   const [dayPhase, setDayPhase] = useState<DayPhase>("discussion");
   const [voteTally, setVoteTally] = useState<DayVoteTally>({});
@@ -418,7 +463,12 @@ export function DayMenu({
         />
       ) : null}
       {dayPhase === "resolution" ? (
-        <DayMenuResolution onContinue={onContinue} voteTally={voteTally} />
+        <DayMenuResolution
+          onContinue={onContinue}
+          voteTally={voteTally}
+          players={players}
+          onApplyElimination={onApplyElimination}
+        />
       ) : null}
     </section>
   );
