@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getNightActionComponent } from "../game/NightActions";
 import type { NightEvent } from "../game/NightEvents";
 import type { GameState, Player } from "../game/GameState";
-import { getRoleById, type RoleType } from "../game/Roles";
+import { getRoleById, type Team } from "../game/Roles";
 import "./NightMenu.css";
 
 export type NightMenuProps = {
@@ -18,7 +18,7 @@ function shouldSkipNightTurn(player: Player): boolean {
   return player.alive === false;
 }
 
-function teamLabel(type: RoleType): string {
+function teamLabel(type: Team): string {
   switch (type) {
     case "evil":
       return "Evil";

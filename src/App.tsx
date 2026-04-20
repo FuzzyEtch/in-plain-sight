@@ -6,8 +6,10 @@ import {
   saveGameState,
 } from "./game/GameStateStorage";
 import { clearPreGameStateStorage } from "./game/PreGameStateStorage";
+import { checkVictory } from "./game/CheckVictory";
 import { setGamePhase, type GameState } from "./game/GameState";
 import { DayMenu } from "./pages/DayMenu";
+import { GameEndMenu } from "./pages/GameEndMenu";
 import { MainMenu } from "./pages/MainMenu";
 import { NightMenu } from "./pages/NightMenu";
 import "./App.css";
@@ -89,24 +91,40 @@ function App() {
     setRestartModalOpen(false);
   }, []);
 
+  const handleGameEndReturnHome = useCallback(() => {
+    clearGameStateStorage();
+    setGameState(null);
+    setMainMenuKey((k) => k + 1);
+  }, []);
+
   let main: ReactNode;
-  if (gameState != null && gameState.phase === "night") {
-    main = (
-      <NightMenu
-        gameState={gameState}
-        onComplete={handleNightComplete}
-        onAppendNightEvent={handleAppendNightEvent}
-      />
-    );
-  } else if (gameState != null && gameState.phase === "day") {
-    main = (
-      <DayMenu
-        onContinue={handleDayContinue}
-        nightEventMessages={gameState.nightEventMessages}
-        players={gameState.players}
-        onApplyElimination={handleApplyDayElimination}
-      />
-    );
+  if (gameState != null) {
+    const victoryTeam = checkVictory(gameState);
+    if (victoryTeam != null) {
+      main = (
+        <GameEndMenu
+          winnerTeam={victoryTeam}
+          onReturnHome={handleGameEndReturnHome}
+        />
+      );
+    } else if (gameState.phase === "night") {
+      main = (
+        <NightMenu
+          gameState={gameState}
+          onComplete={handleNightComplete}
+          onAppendNightEvent={handleAppendNightEvent}
+        />
+      );
+    } else if (gameState.phase === "day") {
+      main = (
+        <DayMenu
+          onContinue={handleDayContinue}
+          nightEventMessages={gameState.nightEventMessages}
+          players={gameState.players}
+          onApplyElimination={handleApplyDayElimination}
+        />
+      );
+    }
   } else {
     main = (
       <MainMenu key={mainMenuKey} onGameInitialized={handleGameInitialized} />

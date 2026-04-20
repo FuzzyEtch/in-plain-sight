@@ -1,9 +1,9 @@
-export type RoleType = "evil" | "good" | "other";
+export type Team = "evil" | "good" | "other";
 
 export type Role = {
   id: string;
   name: string;
-  type: RoleType;
+  type: Team;
   description: string;
 };
 

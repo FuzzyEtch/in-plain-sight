@@ -10,16 +10,16 @@ import {
   savePreGameState,
 } from "../game/PreGameStateStorage";
 import { initializeGameState, type GameState } from "../game/GameState";
-import { ALL_ROLES, type RoleType } from "../game/Roles";
+import { ALL_ROLES, type Team } from "../game/Roles";
 import "./MainMenu.css";
 
 export type MainMenuProps = {
   onGameInitialized: (gameState: GameState) => void;
 };
 
-const ROLE_TYPE_ORDER: RoleType[] = ["evil", "good", "other"];
+const ROLE_TYPE_ORDER: Team[] = ["evil", "good", "other"];
 
-const ROLE_TYPE_LABELS: Record<RoleType, string> = {
+const ROLE_TYPE_LABELS: Record<Team, string> = {
   evil: "Evil",
   good: "Good",
   other: "Other",
