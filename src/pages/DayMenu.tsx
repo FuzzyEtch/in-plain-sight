@@ -193,14 +193,16 @@ function DayMenuVoting({
     () => players.filter((p) => !shouldSkipVoteTurn(p)),
     [players],
   );
-  const eligibleVoteTargets = useMemo(
-    () => players.filter((p) => p.alive),
-    [players],
-  );
 
   const [playerIndex, setPlayerIndex] = useState(0);
   const [step, setStep] = useState<VoteStep>("identity1");
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+
+  const actingVoterId = voteTurnPlayers[playerIndex]?.id ?? null;
+  const eligibleVoteTargets = useMemo(() => {
+    if (actingVoterId == null) return [];
+    return players.filter((p) => p.alive && p.id !== actingVoterId);
+  }, [players, actingVoterId]);
 
   useEffect(() => {
     if (voteTurnPlayers.length === 0) {

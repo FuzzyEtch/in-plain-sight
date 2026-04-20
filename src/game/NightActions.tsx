@@ -21,7 +21,7 @@ function NightActionDefault({
 }: NightActionProps): ReactElement {
   return (
     <div className="night-action-default">
-      <p className="night-action-default-placeholder">To be implemented.</p>
+      <p className="night-action-default-placeholder">No actions.</p>
       <button
         type="button"
         className="night-menu-btn night-menu-btn-primary"
@@ -45,16 +45,15 @@ function NightActionKiller({
   const [submitted, setSubmitted] = useState(false);
 
   const eligibleVictims = useMemo(
-    () =>
-      gameState.players.filter(
-        (p) => p.alive && p.roleId !== "killer",
-      ),
+    () => gameState.players.filter((p) => p.alive && p.roleId !== "killer"),
     [gameState.players],
   );
 
   function handleConfirm() {
     if (selectedVictimId == null || submitted) return;
-    const victimName = gameState.players.find((p) => p.id === selectedVictimId)?.name;
+    const victimName = gameState.players.find(
+      (p) => p.id === selectedVictimId,
+    )?.name;
     onAppendNightEvent({
       priority: KILLER_KILL_PRIORITY,
       target: selectedVictimId,
@@ -86,7 +85,9 @@ function NightActionKiller({
     <div className="night-action-killer">
       {!submitted ? (
         <fieldset className="night-action-killer-fieldset">
-          <legend className="night-action-killer-legend">Choose a victim</legend>
+          <legend className="night-action-killer-legend">
+            Choose a victim
+          </legend>
           <ul className="night-action-killer-list">
             {eligibleVictims.map((p) => (
               <li key={p.id}>
