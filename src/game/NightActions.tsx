@@ -109,7 +109,7 @@ function NightActionKiller({
       {!submitted ? (
         <button
           type="button"
-          className="night-action-killer-confirm"
+          className="night-menu-btn night-menu-btn-primary"
           disabled={selectedVictimId == null}
           onClick={handleConfirm}
         >
@@ -119,7 +119,7 @@ function NightActionKiller({
       {submitted ? (
         <button
           type="button"
-          className="night-menu-btn night-menu-btn-primary night-action-killer-continue"
+          className="night-menu-btn night-menu-btn-primary"
           onClick={onContinueNightTurn}
         >
           Continue
