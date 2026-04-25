@@ -7,7 +7,9 @@ export type Player = {
   name: string;
   /** Id of the role in {@link ALL_ROLES}. */
   roleId: string;
+
   alive: boolean;
+  canUseNightAction: boolean;
 };
 
 /** Arbitrary keyed values updated by global-target night events (see {@link resolveNightEvents}). */
@@ -25,6 +27,20 @@ export type GameState = {
 
 export function setGamePhase(state: GameState, phase: GamePhase): GameState {
   return { ...state, phase };
+}
+
+export function swapPlayerRoles(
+  a: Player,
+  b: Player,
+): { playerA: Player; playerB: Player } {
+  if (a.id === b.id) {
+    const p: Player = { ...a, canUseNightAction: true };
+    return { playerA: p, playerB: p };
+  }
+  return {
+    playerA: { ...a, roleId: b.roleId, canUseNightAction: true },
+    playerB: { ...b, roleId: a.roleId, canUseNightAction: true },
+  };
 }
 
 export type InitializeGameStateResult =
@@ -78,6 +94,7 @@ export function initializeGameState(
     name: p.name,
     roleId: pool[i]!.id,
     alive: true,
+    canUseNightAction: true,
   }));
 
   return {

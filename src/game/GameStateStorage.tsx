@@ -28,7 +28,11 @@ function parsePlayer(raw: unknown): Player | null {
     if (legacy) roleId = legacy.id;
   }
   if (roleId == null) return null;
-  return { id: row.id, name: row.name, roleId, alive: row.alive };
+  const canUseNightAction =
+    typeof row.canUseNightAction === "boolean"
+      ? row.canUseNightAction
+      : true;
+  return { id: row.id, name: row.name, roleId, alive: row.alive, canUseNightAction };
 }
 
 function parseNightEventValue(
