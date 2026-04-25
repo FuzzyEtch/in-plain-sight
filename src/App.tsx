@@ -88,7 +88,7 @@ function App() {
     });
   }, []);
 
-  /** Night visit (reactions) plus optional follow-up event in one state update. */
+  /** Night visit reaction processing plus optional follow-up event in one update. */
   const handleNightVisit = useCallback(
     (visit: NightVisitContext, followUpEvent?: NightEvent) => {
       setGameState((s) => {

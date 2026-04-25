@@ -1,6 +1,5 @@
 import {
-  createNightVisitEvent,
-  createSkinWalkerRoleSwapNightEvents,
+  type NightEvent,
   type NightVisitContext,
 } from "./NightEvents";
 import { ALL_ROLES, type Role } from "./Roles";
@@ -25,6 +24,51 @@ export type VisitNightReaction = (
 ) => GameState;
 
 export type SimpleNightReaction = (gameState: GameState) => GameState;
+
+const SKIN_WALKER_ROLE_SWAP_PRIORITY = 200;
+
+function createSkinWalkerRoleSwapNightEvents(
+  visit: NightVisitContext,
+  visitorRoleId: string,
+  targetRoleId: string,
+): NightEvent[] {
+  const pickOneGroup = `${SKIN_WALKER_ROLE_SWAP_PRIORITY.toString()}|${visit.targetId}`;
+  const pickOneGroupBundle = visit.visitorId;
+  return [
+    {
+      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      pickOneGroup,
+      pickOneGroupBundle,
+      target: visit.targetId,
+      key: "roleId",
+      value: visitorRoleId,
+    },
+    {
+      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      pickOneGroup,
+      pickOneGroupBundle,
+      target: visit.visitorId,
+      key: "roleId",
+      value: targetRoleId,
+    },
+    {
+      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      pickOneGroup,
+      pickOneGroupBundle,
+      target: visit.targetId,
+      key: "canUseNightAction",
+      value: true,
+    },
+    {
+      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      pickOneGroup,
+      pickOneGroupBundle,
+      target: visit.visitorId,
+      key: "canUseNightAction",
+      value: true,
+    },
+  ];
+}
 
 /**
  * `visit-night` reactions keyed by {@link Role.id} (same pattern as night-action
@@ -112,20 +156,13 @@ export function runReactionsForTrigger(
   return gameState;
 }
 
-/**
- * Appends a {@link createNightVisitEvent} for `visit`, then runs all
- * `visit-night` reactions.
- */
+/** Runs all `visit-night` reactions for `visit`. */
 export function checkVisitNightReactions(
   gameState: GameState,
   visit: NightVisitContext,
 ): GameState {
-  const withVisit: GameState = {
-    ...gameState,
-    nightEvents: [...gameState.nightEvents, createNightVisitEvent(visit)],
-  };
   return runReactionsForTrigger(
-    withVisit,
+    gameState,
     ReactionTrigger.VisitNight,
     visit,
   );

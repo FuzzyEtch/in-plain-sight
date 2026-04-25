@@ -12,6 +12,8 @@ export type NightEventTarget = GlobalGameStateTarget | string;
 
 export type NightEvent = {
   priority: number;
+  pickOneGroup: string;
+  pickOneGroupBundle: string;
   target: NightEventTarget;
   key: string;
   value: string | number | boolean;
@@ -24,78 +26,11 @@ export type NightVisitContext = {
   targetId: string;
 };
 
-/**
- * Priority for the canonical "visit" record. Kept low so role-specific
- * night actions (higher priority) can override the same target/key if needed.
- */
-export const NIGHT_VISIT_EVENT_PRIORITY = 1;
-
-/**
- * A player-targeted event recording that `visitorId` selected `targetId` for
- * a night action. `applyNightEventToPlayer` ignores unknown keys, so this does
- * not change player state until {@link resolveNightEvents}.
- */
-export function createNightVisitEvent(visit: NightVisitContext): NightEvent {
-  return {
-    priority: NIGHT_VISIT_EVENT_PRIORITY,
-    target: visit.targetId,
-    key: "nightVisitor",
-    value: visit.visitorId,
-  };
-}
-
-/** skin-walker swap: each step has a distinct priority for resolution order. */
-export const SKIN_WALKER_ROLE_SWAP_PRIORITIES = {
-  targetReceivesVisitorRole: 200,
-  visitorReceivesTargetRole: 201,
-  targetCanUseNightAction: 202,
-  visitorCanUseNightAction: 203,
-} as const;
-
-/**
- * Queues four night events: swap `roleId` between visit target and visitor (using
- * snapshot `visitorRoleId` / `targetRoleId`), then set `canUseNightAction` to
- * `true` on both players. Applied in ascending priority in {@link resolveNightEvents}.
- */
-export function createSkinWalkerRoleSwapNightEvents(
-  visit: NightVisitContext,
-  visitorRoleId: string,
-  targetRoleId: string,
-): NightEvent[] {
-  const p = SKIN_WALKER_ROLE_SWAP_PRIORITIES;
-  return [
-    {
-      priority: p.targetReceivesVisitorRole,
-      target: visit.targetId,
-      key: "roleId",
-      value: visitorRoleId,
-    },
-    {
-      priority: p.visitorReceivesTargetRole,
-      target: visit.visitorId,
-      key: "roleId",
-      value: targetRoleId,
-    },
-    {
-      priority: p.targetCanUseNightAction,
-      target: visit.targetId,
-      key: "canUseNightAction",
-      value: true,
-    },
-    {
-      priority: p.visitorCanUseNightAction,
-      target: visit.visitorId,
-      key: "canUseNightAction",
-      value: true,
-    },
-  ];
-}
-
 /** Ordered list of night events (use {@link sortNightEvents} before processing). */
 export type NightEvents = NightEvent[];
 
 export function isGlobalGameStateTarget(
-  target: string
+  target: string,
 ): target is GlobalGameStateTarget {
   return target === GLOBAL_GAME_STATE_TARGET;
 }
@@ -105,44 +40,79 @@ export function sortNightEvents(events: NightEvents): NightEvents {
   return [...events].sort((a, b) => a.priority - b.priority);
 }
 
-function pickRandom<T>(items: readonly T[]): T {
-  return items[Math.floor(Math.random() * items.length)]!;
-}
+type Bundle = {
+  id: string; // `${pickOneGroup}|${pickOneGroupBundle}`
+  pickOneGroup: string;
+  pickOneGroupBundle: string;
+  priority: number;
+  events: NightEvent[];
+};
+
+type GroupWinner = {
+  bundleId: string;
+  priority: number;
+};
 
 /**
- * Priorities for which multiple events at the same level are collapsed to one
- * (random) in {@link dedupNightEvents}. Other equal-priority groups keep all
- * events.
+ * Single pass over `events` (`O(n)`):
+ * - Non-pick-one events are always kept.
+ * - Pick-one events are bucketed by `(pickOneGroup, pickOneGroupBundle)`.
+ * - For each `pickOneGroup`, exactly one bundle wins (highest seen priority;
+ *   equal priority uses random tie-break), and only that bundle's events remain.
  */
-export const DEDUPE_NIGHT_EVENT_PRIORITIES: ReadonlySet<number> = new Set([
-  100,
-]);
+function resolvePickOneBundles(events: NightEvent[]): NightEvent[] {
+  const nonPickOne: NightEvent[] = [];
+  const bundlesById = new Map<string, Bundle>();
+  const winnerByGroup = new Map<string, GroupWinner>();
 
-/**
- * Assumes `events` is already sorted ascending by {@link NightEvent.priority}.
- * For each group of equal priority, if the priority is in
- * {@link DEDUPE_NIGHT_EVENT_PRIORITIES}, keeps one event (chosen with
- * {@link pickRandom}) and discards the rest; otherwise keeps the whole run.
- *
- * Returns a new array, still sorted ascending by priority.
- */
-export function dedupNightEvents(events: NightEvents): NightEvents {
-  if (events.length === 0) return [];
-  const out: NightEvent[] = [];
-  let runStart = 0;
-  for (let i = 1; i <= events.length; i++) {
-    const atEnd = i === events.length;
-    const priorityChanged =
-      !atEnd && events[i]!.priority !== events[runStart]!.priority;
-    if (atEnd || priorityChanged) {
-      const run = events.slice(runStart, i);
-      const p = run[0]!.priority;
-      if (DEDUPE_NIGHT_EVENT_PRIORITIES.has(p)) {
-        out.push(pickRandom(run));
-      } else {
-        out.push(...run);
+  for (const e of events) {
+    if (!e.pickOneGroup || !e.pickOneGroupBundle) {
+      nonPickOne.push(e);
+      continue;
+    }
+
+    const bundleId = `${e.pickOneGroup}\u0001${e.pickOneGroupBundle}`;
+    const existing = bundlesById.get(bundleId);
+    if (existing) {
+      existing.events.push(e);
+      if (e.priority > existing.priority) existing.priority = e.priority;
+    } else {
+      bundlesById.set(bundleId, {
+        id: bundleId,
+        pickOneGroup: e.pickOneGroup,
+        pickOneGroupBundle: e.pickOneGroupBundle,
+        priority: e.priority,
+        events: [e],
+      });
+    }
+
+    const bundle = bundlesById.get(bundleId)!;
+    const prevWinner = winnerByGroup.get(e.pickOneGroup);
+    if (prevWinner == null || bundle.priority > prevWinner.priority) {
+      winnerByGroup.set(e.pickOneGroup, {
+        bundleId: bundle.id,
+        priority: bundle.priority,
+      });
+      continue;
+    }
+    if (
+      bundle.priority === prevWinner.priority &&
+      bundle.id !== prevWinner.bundleId
+    ) {
+      if (Math.random() < 0.5) {
+        winnerByGroup.set(e.pickOneGroup, {
+          bundleId: bundle.id,
+          priority: bundle.priority,
+        });
       }
-      runStart = i;
+    }
+  }
+
+  const out = [...nonPickOne];
+  for (const winner of winnerByGroup.values()) {
+    const bundle = bundlesById.get(winner.bundleId);
+    if (bundle != null) {
+      out.push(...bundle.events);
     }
   }
   return out;
@@ -206,8 +176,8 @@ function applyNightEventToPlayers(
 }
 
 /**
- * Resolves queued night events: sorts, {@link dedupNightEvents} (one random
- * survivor per priority), {@link flattenNightEvents} (one event per
+ * Resolves queued night events: sorts, {@link resolvePickOneBundles}
+ * (one surviving bundle per `pickOneGroup`), {@link flattenNightEvents} (one event per
  * `(target, key)` keeping highest priority), then applies the result in ascending
  * priority order. Player targets get `key` → `value` (e.g. `alive`, `roleId`,
  * `canUseNightAction`). Global targets merge into {@link GameState.global}.
@@ -219,8 +189,8 @@ export function resolveNightEvents(state: GameState): GameState {
     return { ...state, nightEvents: [], nightEventMessages: [] };
   }
 
-  const deduped = dedupNightEvents(sorted);
-  const flattened = flattenNightEvents(deduped);
+  const bundled = resolvePickOneBundles(sorted);
+  const flattened = flattenNightEvents(bundled);
 
   let players = state.players.map((p) => ({ ...p }));
   let global: GlobalState = { ...(state.global ?? {}) };

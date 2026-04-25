@@ -21,8 +21,8 @@ export type NightActionProps = {
   actingPlayerId: string;
   onAppendNightEvent: (event: NightEvent) => void;
   /**
-   * Records a visit (night event + visit-night reactions) in one update.
-   * Optional `followUpEvent` appends after the visit (e.g. killer kill).
+   * Handles a visit and enqueues any resulting reaction events in one update.
+   * Optional `followUpEvent` appends after reaction processing (e.g. killer kill).
    */
   onNightVisit: (visit: NightVisitContext, followUpEvent?: NightEvent) => void;
   /** Advance to the next player (or end the night round). */
@@ -134,6 +134,8 @@ function NightActionKiller({
       { visitorId: actingPlayerId, targetId: victimId },
       {
         priority: KILLER_KILL_PRIORITY,
+        pickOneGroup: `${KILLER_KILL_PRIORITY.toString()}`,
+        pickOneGroupBundle: `${KILLER_KILL_PRIORITY.toString()}`,
         target: victimId,
         key: "alive",
         value: false,
