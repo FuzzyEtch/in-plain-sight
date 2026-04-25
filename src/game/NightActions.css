@@ -96,3 +96,16 @@
 .night-action-detective-team {
   font-weight: 600;
 }
+
+.night-action-coroner-reveal {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-h);
+  text-align: left;
+}
+
+.night-action-coroner-name,
+.night-action-coroner-role {
+  font-weight: 600;
+}

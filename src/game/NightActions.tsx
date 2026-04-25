@@ -260,6 +260,86 @@ function NightActionDetective({
   );
 }
 
+function NightActionCoroner({
+  gameState,
+  onContinueNightTurn,
+}: NightActionProps): ReactElement {
+  const [examinedId, setExaminedId] = useState<string | null>(null);
+
+  const deadPlayers = useMemo(
+    () => gameState.players.filter((p) => !p.alive),
+    [gameState.players],
+  );
+
+  const deadOptions = useMemo(
+    () => deadPlayers.map((p) => ({ id: p.id, label: p.name })),
+    [deadPlayers],
+  );
+
+  const selectedPlayer = useMemo(
+    () =>
+      examinedId == null
+        ? null
+        : (gameState.players.find((p) => p.id === examinedId) ?? null),
+    [gameState.players, examinedId],
+  );
+
+  const revealedRoleName = useMemo(() => {
+    if (selectedPlayer == null) return null;
+    const role = getRoleById(selectedPlayer.roleId);
+    return role != null ? role.name : selectedPlayer.roleId;
+  }, [selectedPlayer]);
+
+  if (deadPlayers.length === 0) {
+    return (
+      <div className="night-action-killer">
+        <p className="night-action-killer-empty">
+          No dead players to examine tonight.
+        </p>
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="night-action-killer">
+      {examinedId == null ? (
+        <NightActionPlayerRadioForm
+          legend="Examine"
+          options={deadOptions}
+          submitLabel="Reveal role"
+          onSubmit={setExaminedId}
+        />
+      ) : null}
+      {examinedId != null && selectedPlayer && revealedRoleName != null ? (
+        <>
+          <p className="night-action-coroner-reveal" role="status">
+            <span className="night-action-coroner-name">
+              {selectedPlayer.name}
+            </span>{" "}
+            was the{" "}
+            <span className="night-action-coroner-role">{revealedRoleName}</span>
+            .
+          </p>
+          <button
+            type="button"
+            className="night-menu-btn night-menu-btn-primary"
+            onClick={onContinueNightTurn}
+          >
+            Continue
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * Maps {@link Role.id} values from the roles catalog to night-action components.
  * Missing ids fall back to {@link getNightActionComponent}.
@@ -269,6 +349,7 @@ export const NIGHT_ACTION_COMPONENTS: Partial<
 > = {
   killer: NightActionKiller,
   detective: NightActionDetective,
+  coroner: NightActionCoroner,
 };
 
 export function getNightActionComponent(roleId: string): NightActionComponent {
