@@ -52,7 +52,11 @@ function App() {
   }, [restartModalOpen]);
 
   const handleGameInitialized = useCallback((state: GameState) => {
-    setGameState(state);
+    setGameState(
+      state.phase === "night" && state.nightCounter === 0
+        ? { ...state, nightCounter: 1 }
+        : state,
+    );
   }, []);
 
   const handleNightComplete = useCallback(() => {
@@ -66,7 +70,11 @@ function App() {
   const handleDayContinue = useCallback(() => {
     setGameState((s) => {
       if (s == null) return s;
-      return { ...setGamePhase(s, "night"), nightEvents: [] };
+      return {
+        ...setGamePhase(s, "night"),
+        nightEvents: [],
+        nightCounter: s.nightCounter + 1,
+      };
     });
   }, []);
 

@@ -127,11 +127,26 @@ function parseGameState(data: unknown): GameState | null {
       ? parseNightEventMessages(o.nightEventMessages)
       : [];
 
+  const nightCounterRaw = o.nightCounter;
+  const nightCounter =
+    typeof nightCounterRaw === "number" &&
+    Number.isFinite(nightCounterRaw) &&
+    nightCounterRaw >= 0
+      ? nightCounterRaw
+      : 0;
+
   // Refresh returns to the start of the current phase: drop any in-progress
   // night event queue (partial actions were not in a resumable sub-step).
   const nightEventsSanitized = phase === "night" ? [] : nightEvents;
 
-  return { players, global, phase, nightEvents: nightEventsSanitized, nightEventMessages };
+  return {
+    players,
+    global,
+    phase,
+    nightCounter,
+    nightEvents: nightEventsSanitized,
+    nightEventMessages,
+  };
 }
 
 /** Returns `null` if nothing valid is stored or `localStorage` is unavailable. */

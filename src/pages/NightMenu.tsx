@@ -85,7 +85,7 @@ export function NightMenu({
   return (
     <section className="night-menu" aria-labelledby="night-menu-title">
       <h1 id="night-menu-title" className="night-menu-heading">
-        Night
+        Night {gameState.nightCounter}
       </h1>
       <p className="night-menu-progress">
         Player {playerIndex + 1} of {nightTurnPlayers.length}

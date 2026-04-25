@@ -21,6 +21,7 @@ export type GameState = {
   players: Player[];
   global: GlobalState;
   phase: GamePhase;
+  nightCounter: number;
   nightEvents: NightEvents;
   nightEventMessages: string[];
 };
@@ -89,6 +90,7 @@ export function initializeGameState(
       players,
       global: {},
       phase: "night",
+      nightCounter: 0,
       nightEvents: [],
       nightEventMessages: [],
     },
