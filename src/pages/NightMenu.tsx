@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getNightActionComponent } from "../game/NightActions";
-import type { NightEvent } from "../game/NightEvents";
+import type { NightEvent, NightVisitContext } from "../game/NightEvents";
 import type { GameState, Player } from "../game/GameState";
 import { getRoleById, type Team } from "../game/Roles";
 import "./NightMenu.css";
@@ -9,6 +9,7 @@ export type NightMenuProps = {
   gameState: GameState;
   onComplete: () => void;
   onAppendNightEvent: (event: NightEvent) => void;
+  onNightVisit: (visit: NightVisitContext, followUpEvent?: NightEvent) => void;
 };
 
 type NightStep = "identity1" | "identity2" | "rolePanel";
@@ -33,6 +34,7 @@ export function NightMenu({
   gameState,
   onComplete,
   onAppendNightEvent,
+  onNightVisit,
 }: NightMenuProps) {
   const { players } = gameState;
   const nightTurnPlayers = players.filter((p) => !shouldSkipNightTurn(p));
@@ -119,6 +121,7 @@ export function NightMenu({
                 gameState={gameState}
                 actingPlayerId={player.id}
                 onAppendNightEvent={onAppendNightEvent}
+                onNightVisit={onNightVisit}
                 onContinueNightTurn={handleRolePanelContinue}
               />
             </div>

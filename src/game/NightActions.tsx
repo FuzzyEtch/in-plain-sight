@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import type { ReactElement } from "react";
-import type { NightEvent } from "./NightEvents";
+import type { NightEvent, NightVisitContext } from "./NightEvents";
 import type { GameState } from "./GameState";
 import { getRoleById, type Role, type Team } from "./Roles";
 import "./NightActions.css";
@@ -20,6 +20,11 @@ export type NightActionProps = {
   gameState: GameState;
   actingPlayerId: string;
   onAppendNightEvent: (event: NightEvent) => void;
+  /**
+   * Records a visit (night event + visit-night reactions) in one update.
+   * Optional `followUpEvent` appends after the visit (e.g. killer kill).
+   */
+  onNightVisit: (visit: NightVisitContext, followUpEvent?: NightEvent) => void;
   /** Advance to the next player (or end the night round). */
   onContinueNightTurn: () => void;
 };
@@ -104,8 +109,9 @@ const KILLER_KILL_PRIORITY = 100;
 
 function NightActionKiller({
   gameState,
-  onAppendNightEvent,
+  actingPlayerId,
   onContinueNightTurn,
+  onNightVisit,
 }: NightActionProps): ReactElement {
   const [submitted, setSubmitted] = useState(false);
 
@@ -124,13 +130,16 @@ function NightActionKiller({
     const victimName = gameState.players.find(
       (p) => p.id === victimId,
     )?.name;
-    onAppendNightEvent({
-      priority: KILLER_KILL_PRIORITY,
-      target: victimId,
-      key: "alive",
-      value: false,
-      message: `Player ${victimName} was found dead this moring. ${victimName} cannot speak or vote for the rest of the game.`,
-    });
+    onNightVisit(
+      { visitorId: actingPlayerId, targetId: victimId },
+      {
+        priority: KILLER_KILL_PRIORITY,
+        target: victimId,
+        key: "alive",
+        value: false,
+        message: `Player ${victimName} was found dead this moring. ${victimName} cannot speak or vote for the rest of the game.`,
+      },
+    );
     setSubmitted(true);
   }
 
@@ -177,6 +186,7 @@ function NightActionKiller({
 function NightActionDetective({
   gameState,
   actingPlayerId,
+  onNightVisit,
   onContinueNightTurn,
 }: NightActionProps): ReactElement {
   const [investigatedId, setInvestigatedId] = useState<string | null>(null);
@@ -225,6 +235,11 @@ function NightActionDetective({
     );
   }
 
+  function handleInvestigatePicked(id: string) {
+    onNightVisit({ visitorId: actingPlayerId, targetId: id });
+    setInvestigatedId(id);
+  }
+
   return (
     <div className="night-action-killer">
       {investigatedId == null ? (
@@ -232,7 +247,7 @@ function NightActionDetective({
           legend="Investigate"
           options={targetOptions}
           submitLabel="Submit"
-          onSubmit={setInvestigatedId}
+          onSubmit={handleInvestigatePicked}
         />
       ) : null}
       {investigatedId != null && selectedPlayer && selectedTeamLabel != null ? (
@@ -262,6 +277,8 @@ function NightActionDetective({
 
 function NightActionCoroner({
   gameState,
+  actingPlayerId,
+  onNightVisit,
   onContinueNightTurn,
 }: NightActionProps): ReactElement {
   const [examinedId, setExaminedId] = useState<string | null>(null);
@@ -307,6 +324,11 @@ function NightActionCoroner({
     );
   }
 
+  function handleExaminePicked(id: string) {
+    onNightVisit({ visitorId: actingPlayerId, targetId: id });
+    setExaminedId(id);
+  }
+
   return (
     <div className="night-action-killer">
       {examinedId == null ? (
@@ -314,7 +336,7 @@ function NightActionCoroner({
           legend="Examine"
           options={deadOptions}
           submitLabel="Reveal role"
-          onSubmit={setExaminedId}
+          onSubmit={handleExaminePicked}
         />
       ) : null}
       {examinedId != null && selectedPlayer && revealedRoleName != null ? (

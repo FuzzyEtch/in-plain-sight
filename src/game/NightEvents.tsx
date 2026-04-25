@@ -18,6 +18,32 @@ export type NightEvent = {
   message?: string;
 };
 
+/** Visitation during the night: acting player and chosen target. */
+export type NightVisitContext = {
+  visitorId: string;
+  targetId: string;
+};
+
+/**
+ * Priority for the canonical "visit" record. Kept low so role-specific
+ * night actions (higher priority) can override the same target/key if needed.
+ */
+export const NIGHT_VISIT_EVENT_PRIORITY = 1;
+
+/**
+ * A player-targeted event recording that `visitorId` selected `targetId` for
+ * a night action. `applyNightEventToPlayer` ignores unknown keys, so this does
+ * not change player state until {@link resolveNightEvents}.
+ */
+export function createNightVisitEvent(visit: NightVisitContext): NightEvent {
+  return {
+    priority: NIGHT_VISIT_EVENT_PRIORITY,
+    target: visit.targetId,
+    key: "nightVisitor",
+    value: visit.visitorId,
+  };
+}
+
 /** Ordered list of night events (use {@link sortNightEvents} before processing). */
 export type NightEvents = NightEvent[];
 

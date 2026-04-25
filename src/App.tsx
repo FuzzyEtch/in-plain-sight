@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { resolveNightEvents, type NightEvent } from "./game/NightEvents";
+import { checkVisitNightReactions } from "./game/Reactions";
+import {
+  resolveNightEvents,
+  type NightEvent,
+  type NightVisitContext,
+} from "./game/NightEvents";
 import {
   clearGameStateStorage,
   loadGameState,
@@ -83,6 +88,24 @@ function App() {
     });
   }, []);
 
+  /** Night visit (reactions) plus optional follow-up event in one state update. */
+  const handleNightVisit = useCallback(
+    (visit: NightVisitContext, followUpEvent?: NightEvent) => {
+      setGameState((s) => {
+        if (s == null) return s;
+        let next = checkVisitNightReactions(s, visit);
+        if (followUpEvent != null) {
+          next = {
+            ...next,
+            nightEvents: [...next.nightEvents, followUpEvent],
+          };
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
   const handleRestartConfirm = useCallback(() => {
     clearGameStateStorage();
     clearPreGameStateStorage();
@@ -109,11 +132,12 @@ function App() {
       );
     } else if (gameState.phase === "night") {
       main = (
-        <NightMenu
-          gameState={gameState}
-          onComplete={handleNightComplete}
-          onAppendNightEvent={handleAppendNightEvent}
-        />
+      <NightMenu
+        gameState={gameState}
+        onComplete={handleNightComplete}
+        onAppendNightEvent={handleAppendNightEvent}
+        onNightVisit={handleNightVisit}
+      />
       );
     } else if (gameState.phase === "day") {
       main = (
