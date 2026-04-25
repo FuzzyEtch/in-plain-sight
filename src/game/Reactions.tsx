@@ -1,7 +1,7 @@
 import { type NightEvent, type NightVisitContext } from "./NightEvents";
 import { ALL_ROLES, type Role } from "./Roles";
 import { SKIN_WALKER_ROLE_SWAP_PRIORITY } from "./ActionPriorities";
-import type { GameState } from "./GameState";
+import type { GameState, Player } from "./GameState";
 
 export type { NightVisitContext };
 
@@ -25,43 +25,44 @@ export type SimpleNightReaction = (gameState: GameState) => GameState;
 
 function createSkinWalkerRoleSwapNightEvents(
   visit: NightVisitContext,
-  visitorRoleId: string,
-  targetRoleId: string,
+  visitor: Player,
+  target: Player,
 ): NightEvent[] {
+  const priority = SKIN_WALKER_ROLE_SWAP_PRIORITY;
   const pickOneGroup = `${SKIN_WALKER_ROLE_SWAP_PRIORITY.toString()}|${visit.targetId}`;
   const pickOneGroupBundle = visit.visitorId;
   return [
     {
-      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      priority,
       pickOneGroup,
       pickOneGroupBundle,
       target: visit.targetId,
       key: "roleId",
-      value: visitorRoleId,
+      value: visitor.roleId,
     },
     {
-      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      priority,
       pickOneGroup,
       pickOneGroupBundle,
       target: visit.visitorId,
       key: "roleId",
-      value: targetRoleId,
+      value: target.roleId,
     },
     {
-      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      priority,
       pickOneGroup,
       pickOneGroupBundle,
       target: visit.targetId,
       key: "canUseNightAction",
-      value: true,
+      value: visitor.canUseNightAction,
     },
     {
-      priority: SKIN_WALKER_ROLE_SWAP_PRIORITY,
+      priority,
       pickOneGroup,
       pickOneGroupBundle,
       target: visit.visitorId,
       key: "canUseNightAction",
-      value: true,
+      value: target.canUseNightAction,
     },
   ];
 }
@@ -86,11 +87,7 @@ export const VISIT_NIGHT_REACTIONS_BY_ROLE: Partial<
       ...gameState,
       nightEvents: [
         ...gameState.nightEvents,
-        ...createSkinWalkerRoleSwapNightEvents(
-          visit,
-          visitor.roleId,
-          target.roleId,
-        ),
+        ...createSkinWalkerRoleSwapNightEvents(visit, visitor, target),
       ],
     };
   },
