@@ -48,10 +48,10 @@ export const ALL_ROLES: Role[] = [
         description: "Once per night, the coroner can reveal a dead player's role.",
     },
     {
-        id: "protector",
-        name: "Protector",
+        id: "medic",
+        name: "Medic",
         type: "good",
-        description: "Once per night, the protector can protect a player from being killed.",
+        description: "Once per night, the medic can protect a player from being killed.",
     },
     {
         id: "bitter-bloom",

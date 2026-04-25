@@ -50,12 +50,20 @@ export function NightActionPlayerRadioForm({
   onSubmit,
 }: NightActionPlayerRadioFormProps): ReactElement {
   const groupId = useId();
+  const legendId = useId();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   return (
     <>
-      <fieldset className="night-action-killer-fieldset">
-        <legend className="night-action-killer-legend">{legend}</legend>
+      {/* div + p, not fieldset/legend — fieldsets in flex columns get inconsistent min-height in WebKit. */}
+      <div
+        className="night-action-killer-radio-group"
+        role="group"
+        aria-labelledby={legendId}
+      >
+        <p id={legendId} className="night-action-killer-legend">
+          {legend}
+        </p>
         <ul className="night-action-killer-list">
           {options.map((opt) => (
             <li key={opt.id}>
@@ -73,7 +81,7 @@ export function NightActionPlayerRadioForm({
             </li>
           ))}
         </ul>
-      </fieldset>
+      </div>
       <button
         type="button"
         className="night-menu-btn night-menu-btn-primary"
