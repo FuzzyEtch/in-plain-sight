@@ -27,6 +27,62 @@ export type NightActionProps = {
 /** Renders the night-action UI for a role. */
 export type NightActionComponent = (props: NightActionProps) => ReactElement;
 
+export type NightActionPlayerOption = { id: string; label: string };
+
+export type NightActionPlayerRadioFormProps = {
+  legend: string;
+  options: NightActionPlayerOption[];
+  submitLabel: string;
+  onSubmit: (playerId: string) => void;
+};
+
+/** Radio list of players + primary submit (shared by killer, detective, etc.). */
+export function NightActionPlayerRadioForm({
+  legend,
+  options,
+  submitLabel,
+  onSubmit,
+}: NightActionPlayerRadioFormProps): ReactElement {
+  const groupId = useId();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  return (
+    <>
+      <fieldset className="night-action-killer-fieldset">
+        <legend className="night-action-killer-legend">{legend}</legend>
+        <ul className="night-action-killer-list">
+          {options.map((opt) => (
+            <li key={opt.id}>
+              <label className="night-action-killer-label">
+                <input
+                  type="radio"
+                  className="night-action-killer-radio"
+                  name={groupId}
+                  value={opt.id}
+                  checked={selectedId === opt.id}
+                  onChange={() => setSelectedId(opt.id)}
+                />
+                <span className="night-action-killer-name">{opt.label}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </fieldset>
+      <button
+        type="button"
+        className="night-menu-btn night-menu-btn-primary"
+        disabled={selectedId == null}
+        onClick={() => {
+          if (selectedId == null) return;
+          onSubmit(selectedId);
+        }}
+      >
+        {submitLabel}
+      </button>
+    </>
+  );
+}
+
 function NightActionDefault({
   onContinueNightTurn,
 }: NightActionProps): ReactElement {
@@ -51,8 +107,6 @@ function NightActionKiller({
   onAppendNightEvent,
   onContinueNightTurn,
 }: NightActionProps): ReactElement {
-  const groupId = useId();
-  const [selectedVictimId, setSelectedVictimId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const eligibleVictims = useMemo(
@@ -60,14 +114,19 @@ function NightActionKiller({
     [gameState.players],
   );
 
-  function handleConfirm() {
-    if (selectedVictimId == null || submitted) return;
+  const victimOptions = useMemo(
+    () => eligibleVictims.map((p) => ({ id: p.id, label: p.name })),
+    [eligibleVictims],
+  );
+
+  function handleVictimPicked(victimId: string) {
+    if (submitted) return;
     const victimName = gameState.players.find(
-      (p) => p.id === selectedVictimId,
+      (p) => p.id === victimId,
     )?.name;
     onAppendNightEvent({
       priority: KILLER_KILL_PRIORITY,
-      target: selectedVictimId,
+      target: victimId,
       key: "alive",
       value: false,
       message: `Player ${victimName} was found dead this moring. ${victimName} cannot speak or vote for the rest of the game.`,
@@ -95,38 +154,12 @@ function NightActionKiller({
   return (
     <div className="night-action-killer">
       {!submitted ? (
-        <fieldset className="night-action-killer-fieldset">
-          <legend className="night-action-killer-legend">
-            Choose a victim
-          </legend>
-          <ul className="night-action-killer-list">
-            {eligibleVictims.map((p) => (
-              <li key={p.id}>
-                <label className="night-action-killer-label">
-                  <input
-                    type="radio"
-                    className="night-action-killer-radio"
-                    name={groupId}
-                    value={p.id}
-                    checked={selectedVictimId === p.id}
-                    onChange={() => setSelectedVictimId(p.id)}
-                  />
-                  <span className="night-action-killer-name">{p.name}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </fieldset>
-      ) : null}
-      {!submitted ? (
-        <button
-          type="button"
-          className="night-menu-btn night-menu-btn-primary"
-          disabled={selectedVictimId == null}
-          onClick={handleConfirm}
-        >
-          Confirm kill
-        </button>
+        <NightActionPlayerRadioForm
+          legend="Choose a victim"
+          options={victimOptions}
+          submitLabel="Confirm kill"
+          onSubmit={handleVictimPicked}
+        />
       ) : null}
       {submitted ? (
         <button
@@ -146,9 +179,7 @@ function NightActionDetective({
   actingPlayerId,
   onContinueNightTurn,
 }: NightActionProps): ReactElement {
-  const groupId = useId();
-  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [investigatedId, setInvestigatedId] = useState<string | null>(null);
 
   const eligibleTargets = useMemo(
     () =>
@@ -158,12 +189,17 @@ function NightActionDetective({
     [gameState.players, actingPlayerId],
   );
 
+  const targetOptions = useMemo(
+    () => eligibleTargets.map((p) => ({ id: p.id, label: p.name })),
+    [eligibleTargets],
+  );
+
   const selectedPlayer = useMemo(
     () =>
-      selectedTargetId == null
+      investigatedId == null
         ? null
-        : (gameState.players.find((p) => p.id === selectedTargetId) ?? null),
-    [gameState.players, selectedTargetId],
+        : (gameState.players.find((p) => p.id === investigatedId) ?? null),
+    [gameState.players, investigatedId],
   );
 
   const selectedTeamLabel = useMemo(() => {
@@ -171,11 +207,6 @@ function NightActionDetective({
     const role = getRoleById(selectedPlayer.roleId);
     return role != null ? teamLabel(role.type) : "—";
   }, [selectedPlayer]);
-
-  function handleSubmit() {
-    if (selectedTargetId == null || submitted) return;
-    setSubmitted(true);
-  }
 
   if (eligibleTargets.length === 0) {
     return (
@@ -196,39 +227,15 @@ function NightActionDetective({
 
   return (
     <div className="night-action-killer">
-      {!submitted ? (
-        <fieldset className="night-action-killer-fieldset">
-          <legend className="night-action-killer-legend">Investigate</legend>
-          <ul className="night-action-killer-list">
-            {eligibleTargets.map((p) => (
-              <li key={p.id}>
-                <label className="night-action-killer-label">
-                  <input
-                    type="radio"
-                    className="night-action-killer-radio"
-                    name={groupId}
-                    value={p.id}
-                    checked={selectedTargetId === p.id}
-                    onChange={() => setSelectedTargetId(p.id)}
-                  />
-                  <span className="night-action-killer-name">{p.name}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </fieldset>
+      {investigatedId == null ? (
+        <NightActionPlayerRadioForm
+          legend="Investigate"
+          options={targetOptions}
+          submitLabel="Submit"
+          onSubmit={setInvestigatedId}
+        />
       ) : null}
-      {!submitted ? (
-        <button
-          type="button"
-          className="night-menu-btn night-menu-btn-primary"
-          disabled={selectedTargetId == null}
-          onClick={handleSubmit}
-        >
-          Submit
-        </button>
-      ) : null}
-      {submitted && selectedPlayer && selectedTeamLabel != null ? (
+      {investigatedId != null && selectedPlayer && selectedTeamLabel != null ? (
         <>
           <p className="night-action-detective-reveal" role="status">
             <span className="night-action-detective-name">
