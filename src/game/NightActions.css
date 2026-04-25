@@ -83,3 +83,16 @@
   color: var(--text-h);
   font-weight: 500;
 }
+
+.night-action-detective-reveal {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-h);
+  text-align: left;
+}
+
+.night-action-detective-name,
+.night-action-detective-team {
+  font-weight: 600;
+}
