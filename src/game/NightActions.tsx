@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import type { NightEvent, NightVisitContext } from "./NightEvents";
 import type { GameState } from "./GameState";
 import { getRoleById, type Role, type Team } from "./Roles";
-import { KILLER_KILL_PRIORITY } from "./ActionPriorities";
+import { KILLER_KILL_PRIORITY, MEDIC_PROTECT_PRIORITY } from "./ActionPriorities";
 import "./NightActions.css";
 
 function teamLabel(type: Team): string {
@@ -279,6 +279,80 @@ function NightActionDetective({
   );
 }
 
+function NightActionMedic({
+  gameState,
+  actingPlayerId,
+  onContinueNightTurn,
+  onNightVisit,
+}: NightActionProps): ReactElement {
+  const [submitted, setSubmitted] = useState(false);
+
+  const eligibleTargets = useMemo(
+    () => gameState.players.filter((p) => p.alive && p.id !== actingPlayerId),
+    [gameState.players],
+  );
+
+  const targetOptions = useMemo(
+    () => eligibleTargets.map((p) => ({ id: p.id, label: p.name })),
+    [eligibleTargets],
+  );
+
+  function handleProtectPicked(targetId: string) {
+    if (submitted) return;
+    onNightVisit(
+      { visitorId: actingPlayerId, targetId },
+      {
+        priority: MEDIC_PROTECT_PRIORITY,
+        pickOneGroup: `${MEDIC_PROTECT_PRIORITY}|${targetId}`,
+        pickOneGroupBundle: `${targetId}`,
+        target: targetId,
+        key: "alive",
+        value: true,
+      },
+    );
+    setSubmitted(true);
+  }
+
+  if (eligibleTargets.length === 0) {
+    return (
+      <div className="night-action-killer">
+        <p className="night-action-killer-empty">
+          No living players to protect tonight.
+        </p>
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="night-action-killer">
+      {!submitted ? (
+        <NightActionPlayerRadioForm
+          legend="Choose a player to protect"
+          options={targetOptions}
+          submitLabel="Confirm protection"
+          onSubmit={handleProtectPicked}
+        />
+      ) : null}
+      {submitted ? (
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function NightActionCoroner({
   gameState,
   actingPlayerId,
@@ -376,6 +450,7 @@ export const NIGHT_ACTION_COMPONENTS: Partial<
   Record<Role["id"], NightActionComponent>
 > = {
   killer: NightActionKiller,
+  medic: NightActionMedic,
   detective: NightActionDetective,
   coroner: NightActionCoroner,
 };
