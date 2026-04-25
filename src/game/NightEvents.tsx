@@ -53,6 +53,17 @@ type GroupWinner = {
   priority: number;
 };
 
+function fixSpecialCases(nightEvents: NightEvents): NightEvents {
+  // If the skinwalker's kill target is the visitor, remove the swap event and let the kill happen.
+  function preventSkinWalkerSelfKill(nightEvents: NightEvents): NightEvents {
+    // To implement
+    return nightEvents;
+  }
+
+  nightEvents = preventSkinWalkerSelfKill(nightEvents);
+  return nightEvents;
+}
+
 /**
  * Single pass over `events` (`O(n)`):
  * - Non-pick-one events are always kept.
@@ -191,12 +202,13 @@ export function resolveNightEvents(state: GameState): GameState {
 
   const bundled = resolvePickOneBundles(sorted);
   const flattened = flattenNightEvents(bundled);
+  const fixed = fixSpecialCases(flattened);
 
   let players = state.players.map((p) => ({ ...p }));
   let global: GlobalState = { ...(state.global ?? {}) };
   let nightEventMessages: string[] = [];
 
-  for (const event of flattened) {
+  for (const event of fixed) {
     if (isGlobalGameStateTarget(event.target)) {
       global = applyNightEventToGlobal(global, event);
     } else {

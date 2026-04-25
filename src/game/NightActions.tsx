@@ -128,8 +128,11 @@ function NightActionKiller({
   const [submitted, setSubmitted] = useState(false);
 
   const eligibleVictims = useMemo(
-    () => gameState.players.filter((p) => p.alive && p.roleId !== "killer"),
-    [gameState.players],
+    () =>
+      gameState.players.filter(
+        (p) => p.alive && p.roleId !== "killer" && p.id !== actingPlayerId,
+      ),
+    [gameState.players, actingPlayerId],
   );
 
   const victimOptions = useMemo(
@@ -565,11 +568,12 @@ function NightActionCorruptor({
 export const NIGHT_ACTION_COMPONENTS: Partial<
   Record<Role["id"], NightActionComponent>
 > = {
-  killer: NightActionKiller,
-  corruptor: NightActionCorruptor,
-  medic: NightActionMedic,
-  detective: NightActionDetective,
-  coroner: NightActionCoroner,
+  "killer": NightActionKiller,
+  "skin-walker": NightActionKiller,
+  "corruptor": NightActionCorruptor,
+  "medic": NightActionMedic,
+  "detective": NightActionDetective,
+  "coroner": NightActionCoroner,
 };
 
 export function getNightActionComponent(roleId: string): NightActionComponent {
