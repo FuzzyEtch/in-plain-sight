@@ -1,8 +1,6 @@
-import {
-  type NightEvent,
-  type NightVisitContext,
-} from "./NightEvents";
+import { type NightEvent, type NightVisitContext } from "./NightEvents";
 import { ALL_ROLES, type Role } from "./Roles";
+import { SKIN_WALKER_ROLE_SWAP_PRIORITY } from "./ActionPriorities";
 import type { GameState } from "./GameState";
 
 export type { NightVisitContext };
@@ -24,8 +22,6 @@ export type VisitNightReaction = (
 ) => GameState;
 
 export type SimpleNightReaction = (gameState: GameState) => GameState;
-
-const SKIN_WALKER_ROLE_SWAP_PRIORITY = 200;
 
 function createSkinWalkerRoleSwapNightEvents(
   visit: NightVisitContext,
@@ -161,35 +157,20 @@ export function checkVisitNightReactions(
   gameState: GameState,
   visit: NightVisitContext,
 ): GameState {
-  return runReactionsForTrigger(
-    gameState,
-    ReactionTrigger.VisitNight,
-    visit,
-  );
+  return runReactionsForTrigger(gameState, ReactionTrigger.VisitNight, visit);
 }
 
 /** `conclude-night` reactions. */
 export function checkConcludeNightReactions(gameState: GameState): GameState {
-  return runReactionsForTrigger(
-    gameState,
-    ReactionTrigger.ConcludeNight,
-  );
+  return runReactionsForTrigger(gameState, ReactionTrigger.ConcludeNight);
 }
 
 /** `conclude-day` reactions. */
 export function checkConcludeDayReactions(gameState: GameState): GameState {
-  return runReactionsForTrigger(
-    gameState,
-    ReactionTrigger.ConcludeDay,
-  );
+  return runReactionsForTrigger(gameState, ReactionTrigger.ConcludeDay);
 }
 
 /** `vote-target-day` reactions. */
-export function checkVoteTargetDayReactions(
-  gameState: GameState,
-): GameState {
-  return runReactionsForTrigger(
-    gameState,
-    ReactionTrigger.VoteTargetDay,
-  );
+export function checkVoteTargetDayReactions(gameState: GameState): GameState {
+  return runReactionsForTrigger(gameState, ReactionTrigger.VoteTargetDay);
 }

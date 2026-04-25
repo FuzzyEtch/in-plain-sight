@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import type { NightEvent, NightVisitContext } from "./NightEvents";
 import type { GameState } from "./GameState";
 import { getRoleById, type Role, type Team } from "./Roles";
+import { KILLER_KILL_PRIORITY } from "./ActionPriorities";
 import "./NightActions.css";
 
 function teamLabel(type: Team): string {
@@ -105,8 +106,6 @@ function NightActionDefault({
   );
 }
 
-const KILLER_KILL_PRIORITY = 100;
-
 function NightActionKiller({
   gameState,
   actingPlayerId,
@@ -127,9 +126,7 @@ function NightActionKiller({
 
   function handleVictimPicked(victimId: string) {
     if (submitted) return;
-    const victimName = gameState.players.find(
-      (p) => p.id === victimId,
-    )?.name;
+    const victimName = gameState.players.find((p) => p.id === victimId)?.name;
     onNightVisit(
       { visitorId: actingPlayerId, targetId: victimId },
       {
@@ -194,10 +191,7 @@ function NightActionDetective({
   const [investigatedId, setInvestigatedId] = useState<string | null>(null);
 
   const eligibleTargets = useMemo(
-    () =>
-      gameState.players.filter(
-        (p) => p.alive && p.id !== actingPlayerId,
-      ),
+    () => gameState.players.filter((p) => p.alive && p.id !== actingPlayerId),
     [gameState.players, actingPlayerId],
   );
 
@@ -348,7 +342,9 @@ function NightActionCoroner({
               {selectedPlayer.name}
             </span>{" "}
             was the{" "}
-            <span className="night-action-coroner-role">{revealedRoleName}</span>
+            <span className="night-action-coroner-role">
+              {revealedRoleName}
+            </span>
             .
           </p>
           <button

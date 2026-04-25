@@ -1,0 +1,2 @@
+export const KILLER_KILL_PRIORITY = 100;
+export const SKIN_WALKER_ROLE_SWAP_PRIORITY = 200;
