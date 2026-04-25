@@ -1,4 +1,8 @@
-import { createNightVisitEvent, type NightVisitContext } from "./NightEvents";
+import {
+  createNightVisitEvent,
+  createSkinWalkerRoleSwapNightEvents,
+  type NightVisitContext,
+} from "./NightEvents";
 import { ALL_ROLES, type Role } from "./Roles";
 import type { GameState } from "./GameState";
 
@@ -15,47 +19,97 @@ export const ReactionTrigger = {
 export type ReactionTrigger =
   (typeof ReactionTrigger)[keyof typeof ReactionTrigger];
 
+export type VisitNightReaction = (
+  gameState: GameState,
+  visit: NightVisitContext,
+) => GameState;
+
+export type SimpleNightReaction = (gameState: GameState) => GameState;
+
 /**
- * A single effect registered for a role, keyed by {@link Role.id}.
- * Each role may have at most one entry in {@link REACTIONS_BY_ROLE}.
- * For `visit-night`, `visit` is set; for other triggers it is `undefined`.
+ * `visit-night` reactions keyed by {@link Role.id} (same pattern as night-action
+ * components in `NightActions.tsx`). Each handler runs in catalog order; only
+ * entries present are invoked. The skin-walker entry queues a swap when the
+ * **visit target** is the skin-walker.
  */
-export type Reaction = {
-  trigger: ReactionTrigger;
-  run: (gameState: GameState, visit?: NightVisitContext) => GameState;
+export const VISIT_NIGHT_REACTIONS_BY_ROLE: Partial<
+  Record<Role["id"], VisitNightReaction>
+> = {
+  "skin-walker": (gameState, visit) => {
+    const target = gameState.players.find((p) => p.id === visit.targetId);
+    if (target == null || target.roleId !== "skin-walker") {
+      return gameState;
+    }
+    const visitor = gameState.players.find((p) => p.id === visit.visitorId);
+    if (visitor == null) return gameState;
+    return {
+      ...gameState,
+      nightEvents: [
+        ...gameState.nightEvents,
+        ...createSkinWalkerRoleSwapNightEvents(
+          visit,
+          visitor.roleId,
+          target.roleId,
+        ),
+      ],
+    };
+  },
 };
 
-/** `roleId` → one {@link Reaction} (if any). */
-export const REACTIONS_BY_ROLE: Partial<Record<Role["id"], Reaction>> = {
-  // Example (commented):
-  // martyr: {
-  //   trigger: ReactionTrigger.ConcludeNight,
-  //   run: (s) => s,
-  // },
-};
+/** `conclude-night` reactions (role id → run). */
+export const CONCLUDE_NIGHT_REACTIONS_BY_ROLE: Partial<
+  Record<Role["id"], SimpleNightReaction>
+> = {};
+
+/** `conclude-day` reactions. */
+export const CONCLUDE_DAY_REACTIONS_BY_ROLE: Partial<
+  Record<Role["id"], SimpleNightReaction>
+> = {};
+
+/** `vote-target-day` reactions. */
+export const VOTE_TARGET_DAY_REACTIONS_BY_ROLE: Partial<
+  Record<Role["id"], SimpleNightReaction>
+> = {};
 
 /**
- * Runs every registered role reaction whose {@link Reaction.trigger} matches
- * `trigger`, in {@link ALL_ROLES} order. Pass `visit` only for
- * {@link ReactionTrigger.VisitNight}.
+ * Runs every registered role reaction for `trigger`, in {@link ALL_ROLES} order.
+ * For {@link ReactionTrigger.VisitNight}, `visit` must be set.
  */
 export function runReactionsForTrigger(
   gameState: GameState,
   trigger: ReactionTrigger,
   visit?: NightVisitContext,
 ): GameState {
-  if (trigger === ReactionTrigger.VisitNight && visit == null) {
-    return gameState;
+  if (trigger === ReactionTrigger.VisitNight) {
+    if (visit == null) return gameState;
+    return ALL_ROLES.reduce((state, role) => {
+      const run = VISIT_NIGHT_REACTIONS_BY_ROLE[role.id];
+      if (run == null) return state;
+      return run(state, visit);
+    }, gameState);
   }
-  return ALL_ROLES.reduce((state, role) => {
-    const reaction = REACTIONS_BY_ROLE[role.id];
-    if (reaction == null) return state;
-    if (reaction.trigger !== trigger) return state;
-    return reaction.run(
-      state,
-      trigger === ReactionTrigger.VisitNight ? visit : undefined,
-    );
-  }, gameState);
+  if (trigger === ReactionTrigger.ConcludeNight) {
+    return ALL_ROLES.reduce((state, role) => {
+      const run = CONCLUDE_NIGHT_REACTIONS_BY_ROLE[role.id];
+      if (run == null) return state;
+      return run(state);
+    }, gameState);
+  }
+  if (trigger === ReactionTrigger.ConcludeDay) {
+    return ALL_ROLES.reduce((state, role) => {
+      const run = CONCLUDE_DAY_REACTIONS_BY_ROLE[role.id];
+      if (run == null) return state;
+      return run(state);
+    }, gameState);
+  }
+  if (trigger === ReactionTrigger.VoteTargetDay) {
+    return ALL_ROLES.reduce((state, role) => {
+      const run = VOTE_TARGET_DAY_REACTIONS_BY_ROLE[role.id];
+      if (run == null) return state;
+      return run(state);
+    }, gameState);
+  }
+  return gameState;
 }
 
 /**

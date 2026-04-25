@@ -44,6 +44,53 @@ export function createNightVisitEvent(visit: NightVisitContext): NightEvent {
   };
 }
 
+/** skin-walker swap: each step has a distinct priority for resolution order. */
+export const SKIN_WALKER_ROLE_SWAP_PRIORITIES = {
+  targetReceivesVisitorRole: 200,
+  visitorReceivesTargetRole: 201,
+  targetCanUseNightAction: 202,
+  visitorCanUseNightAction: 203,
+} as const;
+
+/**
+ * Queues four night events: swap `roleId` between visit target and visitor (using
+ * snapshot `visitorRoleId` / `targetRoleId`), then set `canUseNightAction` to
+ * `true` on both players. Applied in ascending priority in {@link resolveNightEvents}.
+ */
+export function createSkinWalkerRoleSwapNightEvents(
+  visit: NightVisitContext,
+  visitorRoleId: string,
+  targetRoleId: string,
+): NightEvent[] {
+  const p = SKIN_WALKER_ROLE_SWAP_PRIORITIES;
+  return [
+    {
+      priority: p.targetReceivesVisitorRole,
+      target: visit.targetId,
+      key: "roleId",
+      value: visitorRoleId,
+    },
+    {
+      priority: p.visitorReceivesTargetRole,
+      target: visit.visitorId,
+      key: "roleId",
+      value: targetRoleId,
+    },
+    {
+      priority: p.targetCanUseNightAction,
+      target: visit.targetId,
+      key: "canUseNightAction",
+      value: true,
+    },
+    {
+      priority: p.visitorCanUseNightAction,
+      target: visit.visitorId,
+      key: "canUseNightAction",
+      value: true,
+    },
+  ];
+}
+
 /** Ordered list of night events (use {@link sortNightEvents} before processing). */
 export type NightEvents = NightEvent[];
 
@@ -63,9 +110,19 @@ function pickRandom<T>(items: readonly T[]): T {
 }
 
 /**
+ * Priorities for which multiple events at the same level are collapsed to one
+ * (random) in {@link dedupNightEvents}. Other equal-priority groups keep all
+ * events.
+ */
+export const DEDUPE_NIGHT_EVENT_PRIORITIES: ReadonlySet<number> = new Set([
+  100,
+]);
+
+/**
  * Assumes `events` is already sorted ascending by {@link NightEvent.priority}.
- * For each group of equal priority, keeps one event (chosen with
- * {@link pickRandom}) and discards the rest.
+ * For each group of equal priority, if the priority is in
+ * {@link DEDUPE_NIGHT_EVENT_PRIORITIES}, keeps one event (chosen with
+ * {@link pickRandom}) and discards the rest; otherwise keeps the whole run.
  *
  * Returns a new array, still sorted ascending by priority.
  */
@@ -79,7 +136,12 @@ export function dedupNightEvents(events: NightEvents): NightEvents {
       !atEnd && events[i]!.priority !== events[runStart]!.priority;
     if (atEnd || priorityChanged) {
       const run = events.slice(runStart, i);
-      out.push(pickRandom(run));
+      const p = run[0]!.priority;
+      if (DEDUPE_NIGHT_EVENT_PRIORITIES.has(p)) {
+        out.push(pickRandom(run));
+      } else {
+        out.push(...run);
+      }
       runStart = i;
     }
   }
@@ -116,6 +178,12 @@ function applyNightEventToPlayer(player: Player, event: NightEvent): Player {
   if (key === "alive") {
     return { ...player, alive: Boolean(value) };
   }
+  if (key === "roleId" && typeof value === "string") {
+    return { ...player, roleId: value };
+  }
+  if (key === "canUseNightAction" && typeof value === "boolean") {
+    return { ...player, canUseNightAction: value };
+  }
   return player;
 }
 
@@ -141,8 +209,9 @@ function applyNightEventToPlayers(
  * Resolves queued night events: sorts, {@link dedupNightEvents} (one random
  * survivor per priority), {@link flattenNightEvents} (one event per
  * `(target, key)` keeping highest priority), then applies the result in ascending
- * priority order. Player targets get `key` → `value` (e.g. `alive`). Global
- * targets merge into {@link GameState.global}. Clears `nightEvents` when done.
+ * priority order. Player targets get `key` → `value` (e.g. `alive`, `roleId`,
+ * `canUseNightAction`). Global targets merge into {@link GameState.global}.
+ * Clears `nightEvents` when done.
  */
 export function resolveNightEvents(state: GameState): GameState {
   const sorted = sortNightEvents(state.nightEvents);
