@@ -3,7 +3,11 @@ import type { ReactElement } from "react";
 import type { NightEvent, NightVisitContext } from "./NightEvents";
 import type { GameState } from "./GameState";
 import { getRoleById, type Role, type Team } from "./Roles";
-import { KILLER_KILL_PRIORITY, MEDIC_PROTECT_PRIORITY } from "./ActionPriorities";
+import {
+  CORRUPTOR_CORRUPT_PRIORITY,
+  KILLER_KILL_PRIORITY,
+  MEDIC_PROTECT_PRIORITY,
+} from "./ActionPriorities";
 import "./NightActions.css";
 
 function teamLabel(type: Team): string {
@@ -20,7 +24,8 @@ function teamLabel(type: Team): string {
 export type NightActionProps = {
   gameState: GameState;
   actingPlayerId: string;
-  onAppendNightEvent: (event: NightEvent) => void;
+  /** Enqueue one or more night events in a single state update. */
+  onAppendNightEvents: (events: readonly NightEvent[]) => void;
   /**
    * Handles a visit and enqueues any resulting reaction events in one update.
    * Optional `followUpEvent` appends after reaction processing (e.g. killer kill).
@@ -304,7 +309,7 @@ function NightActionMedic({
       {
         priority: MEDIC_PROTECT_PRIORITY,
         pickOneGroup: `${MEDIC_PROTECT_PRIORITY}|${targetId}`,
-        pickOneGroupBundle: `${targetId}`,
+        pickOneGroupBundle: targetId,
         target: targetId,
         key: "alive",
         value: true,
@@ -442,6 +447,117 @@ function NightActionCoroner({
   );
 }
 
+function NightActionCorruptor({
+  gameState,
+  actingPlayerId,
+  onContinueNightTurn,
+  onAppendNightEvents,
+}: NightActionProps): ReactElement {
+  const [submitted, setSubmitted] = useState(false);
+  const isFirstNight = gameState.nightCounter === 1;
+
+  const eligibleTargets = useMemo(
+    () =>
+      gameState.players.filter((p) => p.alive && p.id !== actingPlayerId),
+    [gameState.players, actingPlayerId],
+  );
+
+  const targetOptions = useMemo(
+    () => eligibleTargets.map((p) => ({ id: p.id, label: p.name })),
+    [eligibleTargets],
+  );
+
+  function buildCorruptorEvents(targetId: string): NightEvent[] {
+    const eventBase = {
+      priority: CORRUPTOR_CORRUPT_PRIORITY,
+      pickOneGroup: `${CORRUPTOR_CORRUPT_PRIORITY.toString()}|${targetId}`,
+      pickOneGroupBundle: targetId,
+    } as const;
+    return [
+      {
+        ...eventBase,
+        target: targetId,
+        key: "roleId",
+        value: "killer" as const,
+      },
+      {
+        ...eventBase,
+        target: targetId,
+        key: "canUseNightAction",
+        value: true,
+      },
+      {
+        ...eventBase,
+        target: actingPlayerId,
+        key: "canUseNightAction",
+        value: false,
+      },
+    ];
+  }
+
+  function handleTargetPicked(targetId: string) {
+    if (submitted) return;
+    onAppendNightEvents(buildCorruptorEvents(targetId));
+    setSubmitted(true);
+  }
+
+  if (!isFirstNight) {
+    return (
+      <div className="night-action-killer">
+        <p className="night-action-killer-empty">
+          The corruptor can use this only on the first night.
+        </p>
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      </div>
+    );
+  }
+
+  if (eligibleTargets.length === 0) {
+    return (
+      <div className="night-action-killer">
+        <p className="night-action-killer-empty">
+          No other living players to corrupt.
+        </p>
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="night-action-killer">
+      {!submitted ? (
+        <NightActionPlayerRadioForm
+          legend="Corrupt a player to killer"
+          options={targetOptions}
+          submitLabel="Corrupt"
+          onSubmit={handleTargetPicked}
+        />
+      ) : null}
+      {submitted ? (
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * Maps {@link Role.id} values from the roles catalog to night-action components.
  * Missing ids fall back to {@link getNightActionComponent}.
@@ -450,6 +566,7 @@ export const NIGHT_ACTION_COMPONENTS: Partial<
   Record<Role["id"], NightActionComponent>
 > = {
   killer: NightActionKiller,
+  corruptor: NightActionCorruptor,
   medic: NightActionMedic,
   detective: NightActionDetective,
   coroner: NightActionCoroner,

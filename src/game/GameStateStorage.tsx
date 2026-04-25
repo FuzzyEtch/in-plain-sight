@@ -68,8 +68,8 @@ function parseNightEvent(raw: unknown): NightEvent | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   if (typeof o.priority !== "number" || !Number.isFinite(o.priority)) return null;
-  if (typeof o.pickOneGroup !== "string" || o.pickOneGroup.length === 0) return null;
-  if (typeof o.pickOneGroupBundle !== "string" || o.pickOneGroupBundle.length === 0) return null;
+  if (typeof o.pickOneGroup !== "string") return null;
+  if (typeof o.pickOneGroupBundle !== "string") return null;
   if (typeof o.target !== "string" || o.target.length === 0) return null;
   if (typeof o.key !== "string") return null;
   const value = parseNightEventValue(o.value);

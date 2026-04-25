@@ -8,7 +8,7 @@ import "./NightMenu.css";
 export type NightMenuProps = {
   gameState: GameState;
   onComplete: () => void;
-  onAppendNightEvent: (event: NightEvent) => void;
+  onAppendNightEvents: (events: readonly NightEvent[]) => void;
   onNightVisit: (visit: NightVisitContext, followUpEvent?: NightEvent) => void;
 };
 
@@ -33,7 +33,7 @@ function teamLabel(type: Team): string {
 export function NightMenu({
   gameState,
   onComplete,
-  onAppendNightEvent,
+  onAppendNightEvents,
   onNightVisit,
 }: NightMenuProps) {
   const { players } = gameState;
@@ -120,7 +120,7 @@ export function NightMenu({
               <NightActionComponent
                 gameState={gameState}
                 actingPlayerId={player.id}
-                onAppendNightEvent={onAppendNightEvent}
+                onAppendNightEvents={onAppendNightEvents}
                 onNightVisit={onNightVisit}
                 onContinueNightTurn={handleRolePanelContinue}
               />

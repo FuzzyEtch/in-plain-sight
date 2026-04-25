@@ -92,12 +92,16 @@ function App() {
     });
   }, []);
 
-  const handleAppendNightEvent = useCallback((event: NightEvent) => {
-    setGameState((s) => {
-      if (s == null) return s;
-      return { ...s, nightEvents: [...s.nightEvents, event] };
-    });
-  }, []);
+  const handleAppendNightEvents = useCallback(
+    (events: readonly NightEvent[]) => {
+      if (events.length === 0) return;
+      setGameState((s) => {
+        if (s == null) return s;
+        return { ...s, nightEvents: [...s.nightEvents, ...events] };
+      });
+    },
+    [],
+  );
 
   /** Night visit reaction processing plus optional follow-up event in one update. */
   const handleNightVisit = useCallback(
@@ -146,7 +150,7 @@ function App() {
       <NightMenu
         gameState={gameState}
         onComplete={handleNightComplete}
-        onAppendNightEvent={handleAppendNightEvent}
+        onAppendNightEvents={handleAppendNightEvents}
         onNightVisit={handleNightVisit}
       />
       );
