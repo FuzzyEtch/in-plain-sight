@@ -64,7 +64,10 @@ function App() {
   }, []);
 
   const handleDayContinue = useCallback(() => {
-    setGameState((s) => (s == null ? s : setGamePhase(s, "night")));
+    setGameState((s) => {
+      if (s == null) return s;
+      return { ...setGamePhase(s, "night"), nightEvents: [] };
+    });
   }, []);
 
   const handleApplyDayElimination = useCallback((playerId: string | null) => {

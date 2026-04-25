@@ -429,7 +429,6 @@ export function DayMenu({
   const [voteTally, setVoteTally] = useState<DayVoteTally>({});
 
   const handleDiscussionEnd = useCallback(() => {
-    setVoteTally({});
     setDayPhase("voting");
   }, []);
 
