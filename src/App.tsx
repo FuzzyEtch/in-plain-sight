@@ -121,13 +121,19 @@ function App() {
     [],
   );
 
-  const handleRestartConfirm = useCallback(() => {
-    clearGameStateStorage();
-    clearPreGameStateStorage();
-    setGameState(null);
+  const isOnMainMenu = gameState == null;
+
+  const handleResetConfirm = useCallback(() => {
+    if (isOnMainMenu) {
+      clearGameStateStorage();
+      clearPreGameStateStorage();
+    } else {
+      clearGameStateStorage();
+      setGameState(null);
+    }
     setMainMenuKey((k) => k + 1);
     setRestartModalOpen(false);
-  }, []);
+  }, [isOnMainMenu]);
 
   const handleGameEndReturnHome = useCallback(() => {
     clearGameStateStorage();
@@ -179,7 +185,7 @@ function App() {
           className="app-restart-btn"
           onClick={() => setRestartModalOpen(true)}
         >
-          Restart game
+          {isOnMainMenu ? "Clear data" : "Restart game"}
         </button>
       </footer>
 
@@ -205,11 +211,12 @@ function App() {
               ×
             </button>
             <h2 id="restart-modal-title" className="restart-modal-title">
-              Restart game?
+              {isOnMainMenu ? "Clear all data?" : "Restart game?"}
             </h2>
             <p className="restart-modal-body">
-              All saved game data and setup (players, roles, and progress) will
-              be permanently deleted. This cannot be undone.
+              {isOnMainMenu
+                ? "This removes your main menu setup (players, role counts) and any saved in-progress game. This cannot be undone."
+                : "This ends the current game and removes its saved data. Your main menu setup (players and role counts) is not cleared. This cannot be undone."}
             </p>
             <div className="restart-modal-actions">
               <button
@@ -222,9 +229,9 @@ function App() {
               <button
                 type="button"
                 className="restart-modal-confirm"
-                onClick={handleRestartConfirm}
+                onClick={handleResetConfirm}
               >
-                Delete all and return to menu
+                {isOnMainMenu ? "Clear all data" : "Restart and return to menu"}
               </button>
             </div>
           </div>
