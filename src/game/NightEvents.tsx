@@ -1,3 +1,7 @@
+import {
+  KILLER_KILL_PRIORITY,
+  SKIN_WALKER_ROLE_SWAP_PRIORITY,
+} from "./ActionPriorities";
 import type { GameState, GlobalState, Player } from "./GameState";
 
 /** Reserved target for events that apply to global game state (not a specific player). */
@@ -53,15 +57,46 @@ type GroupWinner = {
   priority: number;
 };
 
-function fixSpecialCases(nightEvents: NightEvents): NightEvents {
-  // If the skinwalker's kill target is the visitor, remove the swap event and let the kill happen.
-  function preventSkinWalkerSelfKill(nightEvents: NightEvents): NightEvents {
-    // To implement
+/**
+ * If a killer kill is queued, drop any skin-walker role-swap events for that
+ * same victim (same {@link KILLER_KILL_PRIORITY} `target` as
+ * {@link SKIN_WALKER_ROLE_SWAP_PRIORITY} events) so a kill and swap on the
+ * same player do not both apply; the entire matching swap bundle is removed.
+ */
+function preventSkinWalkerSwapAndKill(nightEvents: NightEvents): NightEvents {
+  let KillTarget: string | null = null;
+  for (const e of nightEvents) {
+    if (e.priority !== KILLER_KILL_PRIORITY) continue;
+    if (typeof e.target === "string" && !isGlobalGameStateTarget(e.target)) {
+      KillTarget = e.target;
+      break;
+    }
+  }
+  if (KillTarget == null) {
     return nightEvents;
   }
 
-  nightEvents = preventSkinWalkerSelfKill(nightEvents);
-  return nightEvents;
+  const swapBundleKeys = new Set<string>();
+  for (const e of nightEvents) {
+    if (
+      e.priority === SKIN_WALKER_ROLE_SWAP_PRIORITY &&
+      e.target === KillTarget
+    ) {
+      swapBundleKeys.add(`${e.pickOneGroup}`);
+    }
+  }
+  if (swapBundleKeys.size === 0) {
+    return nightEvents;
+  }
+
+  return nightEvents.filter((e) => {
+    const k = `${e.pickOneGroup}`;
+    return !swapBundleKeys.has(k);
+  });
+}
+
+function fixSpecialCases(nightEvents: NightEvents): NightEvents {
+  return preventSkinWalkerSwapAndKill(nightEvents);
 }
 
 /**
