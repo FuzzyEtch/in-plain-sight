@@ -5,6 +5,7 @@ export type Role = {
   name: string;
   type: Team;
   description: string;
+  enabled: boolean;
 };
 
 /** Canonical catalog of every role in the game. Populated later. */
@@ -15,18 +16,21 @@ export const ALL_ROLES: Role[] = [
         name: "Killer",
         type: "evil",
         description: "Once per night, the killer can kill a non-killer player. If there is more than one killer, each killer will be aware of the other killer's identity. If killers attempt to kill multiple players in the same night, a random victim will be selected.",
+        enabled: true,
     },
     {
         id: "corruptor",
         name: "Corruptor",
         type: "evil",
         description: "Once per game at night, turn a player into a killer, they do not retain any elements from their previous role. The killer does not know you are the corruptor.",
+        enabled: true,
     },
     {
         id: "skin-walker",
         name: "Skin Walker",
         type: "evil",
         description: "Once per night, the skin walker can kill a player. If another player interacts with the skin walker that night, the skin walker will swap roles with that player.",
+        enabled: true,
     },
     // Good roles
     {
@@ -34,48 +38,56 @@ export const ALL_ROLES: Role[] = [
         name: "Citizen",
         type: "good",
         description: "A Citizen do not have any special abilities or night actions.",
+        enabled: true,
     },
     {
         id: "detective",
         name: "Detective",
         type: "good",
         description: "Once per night, the detective can reveal which team a player is on.",
+        enabled: true,
     },
     {
         id: "coroner",
         name: "Coroner",
         type: "good",
         description: "Once per night, the coroner can reveal a dead player's role.",
+        enabled: true,
     },
     {
         id: "medic",
         name: "Medic",
         type: "good",
         description: "Once per night, the medic can protect a player from being killed.",
+        enabled: true,
     },
     {
         id: "bitter-bloom",
         name: "Bitter Bloom",
         type: "good",
         description: "Once per game, the bitter bloom can bring back a dead player as a lobotomite. A lobotomite can vote, but cannot speak and has no powers at night.",
+        enabled: false,
     },
     {
         id: "powder-keg",
         name: "Powder Keg",
         type: "good",
         description: "Once per game, the powder keg can set a trap. All players that interact with the powder keg that night are killed.",
+        enabled: false,
     },
     {
         id: "witch-doctor",
         name: "Witch Doctor",
         type: "good",
         description: "Once per game, the witch docter can turn ANY player into a citizen.",
+        enabled: false,
     },
     {
         id: "lobotomite",
         name: "Lobotomite",
         type: "good",
         description: "A lobotomite can vote, but cannot speak and has no powers at night.",
+        enabled: true,
     },
     // Other roles
     {
@@ -83,6 +95,7 @@ export const ALL_ROLES: Role[] = [
         name: "Martyr",
         type: "other",
         description: "At the end of the game, the martyr wins if they were killed at night.",
+        enabled: false,
     },
 ];
 

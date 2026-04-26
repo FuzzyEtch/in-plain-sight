@@ -238,6 +238,10 @@
   background: var(--social-bg);
 }
 
+.role-row--disabled {
+  opacity: 0.9;
+}
+
 .role-name {
   flex: 1;
   min-width: 0;
@@ -329,6 +333,16 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-h);
+}
+
+.role-modal-coming-soon {
+  margin: 0 0 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.9;
 }
 
 .role-modal-body {

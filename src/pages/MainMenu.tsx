@@ -74,6 +74,10 @@ export function MainMenu({ onGameInitialized }: MainMenuProps) {
 
   function adjustRoleCount(roleId: string, delta: number) {
     setPreGameState((s) => {
+      if (delta > 0) {
+        const role = ALL_ROLES.find((r) => r.id === roleId);
+        if (role == null || !role.enabled) return s;
+      }
       const current = s.roleCounts[roleId] ?? 0;
       const next = Math.max(0, current + delta);
       if (next === current) return s;
@@ -168,7 +172,14 @@ export function MainMenu({ onGameInitialized }: MainMenuProps) {
                     const count = preGameState.roleCounts[role.id] ?? 0;
                     const isOpen = openRoleId === role.id;
                     return (
-                      <li key={role.id} className="role-row">
+                      <li
+                        key={role.id}
+                        className={
+                          role.enabled
+                            ? "role-row"
+                            : "role-row role-row--disabled"
+                        }
+                      >
                         <button
                           type="button"
                           className="role-name"
@@ -194,8 +205,14 @@ export function MainMenu({ onGameInitialized }: MainMenuProps) {
                           <button
                             type="button"
                             className="role-counter-btn"
+                            disabled={!role.enabled}
                             onClick={() => adjustRoleCount(role.id, 1)}
                             aria-label={`Increase ${role.name} count`}
+                            title={
+                              !role.enabled
+                                ? "This role is not available yet"
+                                : undefined
+                            }
                           >
                             +
                           </button>
@@ -235,6 +252,11 @@ export function MainMenu({ onGameInitialized }: MainMenuProps) {
               <h2 id="role-modal-title" className="role-modal-title">
                 {openRole.name}
               </h2>
+              {!openRole.enabled ? (
+                <p className="role-modal-coming-soon" role="status">
+                  Coming soon
+                </p>
+              ) : null}
               <p className="role-modal-body">
                 {openRole.description.trim() !== ""
                   ? openRole.description
