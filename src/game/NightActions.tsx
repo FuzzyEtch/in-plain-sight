@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import type { NightEvent, NightVisitContext } from "./NightEvents";
-import type { GameState } from "./GameState";
+import { type GameState, isFirstNight } from "./GameState";
 import { getRoleById, type Role, type Team } from "./Roles";
 import {
   CORRUPTOR_CORRUPT_PRIORITY,
@@ -139,6 +139,23 @@ function NightActionKiller({
     () => eligibleVictims.map((p) => ({ id: p.id, label: p.name })),
     [eligibleVictims],
   );
+
+  if (isFirstNight(gameState)) {
+    return (
+      <div className="night-action-killer">
+        <p className="night-action-killer-empty">
+          You cannot kill on the first night.
+        </p>
+        <button
+          type="button"
+          className="night-menu-btn night-menu-btn-primary"
+          onClick={onContinueNightTurn}
+        >
+          Continue
+        </button>
+      </div>
+    );
+  }
 
   function handleVictimPicked(victimId: string) {
     if (submitted) return;
@@ -457,7 +474,7 @@ function NightActionCorruptor({
   onAppendNightEvents,
 }: NightActionProps): ReactElement {
   const [submitted, setSubmitted] = useState(false);
-  const isFirstNight = gameState.nightCounter === 1;
+  const firstNight = isFirstNight(gameState);
 
   const eligibleTargets = useMemo(
     () =>
@@ -504,7 +521,7 @@ function NightActionCorruptor({
     setSubmitted(true);
   }
 
-  if (!isFirstNight) {
+  if (!firstNight) {
     return (
       <div className="night-action-killer">
         <p className="night-action-killer-empty">

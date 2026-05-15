@@ -21,10 +21,16 @@ export type GameState = {
   players: Player[];
   global: GlobalState;
   phase: GamePhase;
+  /** First playable night is `1` (initialized from `0` when the game enters night). */
   nightCounter: number;
   nightEvents: NightEvents;
   nightEventMessages: string[];
 };
+
+/** True during the first night of the game (`nightCounter` after {@link initializeGameState} is bumped in the app shell). */
+export function isFirstNight(gameState: GameState): boolean {
+  return gameState.nightCounter === 1;
+}
 
 export function setGamePhase(state: GameState, phase: GamePhase): GameState {
   return { ...state, phase };
